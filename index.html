@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مقارن أسعار تذاكر الطيران الداخلي - السعودية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0e7c61;
+    --primary-dark:#095c48;
+    --accent:#f2a900;
+    --bg:#f4f7f6;
+    --card:#ffffff;
+    --text:#1f2a2e;
+    --muted:#6b7a80;
+    --border:#e2e8e6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Tajawal',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    padding:22px 16px;
+    text-align:center;
+  }
+  header h1{margin:0;font-size:22px;font-weight:900;}
+  header p{margin:6px 0 0;font-size:13px;opacity:.9;}
+
+  .container{max-width:1000px;margin:0 auto;padding:20px 16px 60px;}
+
+  .search-card{
+    background:var(--card);
+    border-radius:16px;
+    box-shadow:0 6px 24px rgba(0,0,0,.08);
+    padding:20px;
+    margin-top:-30px;
+    position:relative;
+    z-index:2;
+  }
+
+  .trip-type{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .trip-type label{
+    flex:1;
+    text-align:center;
+    padding:10px;
+    border:2px solid var(--border);
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+    color:var(--muted);
+    transition:.15s;
+    user-select:none;
+  }
+  .trip-type input{display:none;}
+  .trip-type input:checked + span{color:#fff;}
+  .trip-type label:has(input:checked){
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .field{flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;color:var(--muted);font-weight:700;}
+  select, input[type=date]{
+    padding:12px;
+    border-radius:10px;
+    border:1.5px solid var(--border);
+    font-family:inherit;
+    font-size:14px;
+    background:#fff;
+    color:var(--text);
+  }
+  select:focus, input:focus{outline:2px solid var(--primary);}
+
+  .swap-wrap{display:flex;align-items:flex-end;justify-content:center;}
+  .swap-btn{
+    width:42px;height:42px;border-radius:50%;
+    border:1.5px solid var(--border);
+    background:#fff;cursor:pointer;font-size:18px;
+    display:flex;align-items:center;justify-content:center;
+    transition:.15s;
+  }
+  .swap-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+  .search-btn{
+    width:100%;
+    padding:14px;
+    background:var(--accent);
+    border:none;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:16px;
+    font-weight:900;
+    color:#1f2a2e;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .search-btn:hover{filter:brightness(1.05);transform:translateY(-1px);}
+  .error-msg{color:#c0392b;font-size:13px;font-weight:700;margin-top:8px;display:none;}
+
+  .results{margin-top:26px;}
+  .section-title{
+    font-size:17px;font-weight:900;margin:22px 0 12px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .section-title .badge{
+    background:var(--primary);color:#fff;font-size:12px;
+    padding:3px 10px;border-radius:20px;font-weight:700;
+  }
+
+  .flight-card{
+    background:var(--card);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .flight-card:hover{border-color:var(--primary);box-shadow:0 4px 14px rgba(0,0,0,.06);}
+  .flight-card.selected{border-color:var(--primary);background:#f0f9f6;box-shadow:0 0 0 2px var(--primary) inset;}
+
+  .airline{display:flex;align-items:center;gap:10px;min-width:150px;}
+  .airline-logo{
+    width:42px;height:42px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:900;font-size:13px;
+  }
+  .airline-name{font-weight:700;font-size:14px;}
+  .airline-sub{font-size:12px;color:var(--muted);}
+
+  .times{display:flex;align-items:center;gap:10px;min-width:200px;}
+  .time-block{text-align:center;}
+  .time-block .t{font-size:18px;font-weight:900;}
+  .time-block .c{font-size:11px;color:var(--muted);}
+  .duration{text-align:center;font-size:11px;color:var(--muted);}
+  .duration .line{width:70px;height:1px;background:var(--border);margin:4px auto;position:relative;}
+  .duration .line::after{content:"✈";position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(90deg);font-size:11px;color:var(--primary);}
+
+  .price-block{text-align:left;min-width:120px;}
+  .price{font-size:20px;font-weight:900;color:var(--primary-dark);}
+  .price small{font-size:12px;font-weight:700;color:var(--muted);}
+  .seats{font-size:11px;color:#c0392b;font-weight:700;}
+
+  .summary-bar{
+    position:sticky;bottom:0;
+    background:var(--card);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    padding:14px 18px;
+    margin-top:20px;
+    display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 -6px 18px rgba(0,0,0,.06);
+  }
+  .summary-bar .total{font-size:18px;font-weight:900;}
+  .summary-bar .total span{color:var(--primary-dark);}
+  .confirm-btn{
+    background:var(--primary);color:#fff;border:none;
+    padding:12px 26px;border-radius:10px;font-weight:900;
+    font-family:inherit;cursor:pointer;font-size:14px;
+  }
+  .confirm-btn:disabled{background:#b8c4c1;cursor:not-allowed;}
+
+  .empty-note{text-align:center;color:var(--muted);font-size:13px;padding:20px;}
+  .disclaimer{
+    text-align:center;font-size:11.5px;color:var(--muted);
+    margin-top:30px;line-height:1.8;
+  }
+  @media (max-width:600px){
+    .flight-card{justify-content:center;text-align:center;}
+    .price-block{text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>مقارن أسعار تذاكر الطيران الداخلي ✈️</h1>
+  <p>قارن أسعار الرحلات بين مدن المملكة العربية السعودية بسهولة</p>
+</header>
+
+<div class="container">
+
+  <div class="search-card">
+    <div class="trip-type">
+      <label>
+        <input type="radio" name="tripType" value="oneway">
+        <span>ذهاب فقط</span>
+      </label>
+      <label>
+        <input type="radio" name="tripType" value="roundtrip" checked>
+        <span>ذهاب وعودة</span>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="fromCity">من (مدينة المغادرة)</label>
+        <select id="fromCity"></select>
+      </div>
+      <div class="swap-wrap">
+        <button type="button" class="swap-btn" id="swapBtn" title="تبديل الوجهتين">⇄</button>
+      </div>
+      <div class="field">
+        <label for="toCity">إلى (مدينة الوصول)</label>
+        <select id="toCity"></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="departDate">تاريخ الذهاب</label>
+        <input type="date" id="departDate">
+      </div>
+      <div class="field">
+        <label for="returnDate">تاريخ العودة</label>
+        <input type="date" id="returnDate">
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="search-btn" id="searchBtn">🔍 ابحث عن الرحلات</button>
+  </div>
+
+  <div class="results" id="resultsArea"></div>
+
+</div>
+
+<script>
+const cities = [
+  {code:"RUH", name:"الرياض"},
+  {code:"JED", name:"جدة"},
+  {code:"DMM", name:"الدمام"},
+  {code:"MED", name:"المدينة المنورة"},
+  {code:"AHB", name:"أبها"},
+  {code:"TUU", name:"تبوك"},
+  {code:"HAS", name:"حائل"},
+  {code:"GIZ", name:"جازان"},
+  {code:"EAM", name:"نجران"},
+  {code:"ELQ", name:"القصيم (بريدة)"},
+  {code:"YNB", name:"ينبع"},
+  {code:"TIF", name:"الطائف"},
+  {code:"HOF", name:"الأحساء (الهفوف)"},
+  {code:"AQI", name:"القريات"},
+  {code:"AJF", name:"الجوف (سكاكا)"},
+  {code:"WAE", name:"وادي الدواسر"},
+  {code:"BHH", name:"بيشة"},
+  {code:"RAE", name:"عرعر"},
+];
+
+const airlines = [
+  {code:"SV", name:"السعودية", color:"#065c3c", mult:1.15},
+  {code:"XY", name:"فلاي ناس", color:"#e0331e", mult:0.95},
+  {code:"F3", name:"فلاي أديل", color:"#f2a900", mult:0.8},
+];
+
+const fromSel = document.getElementById('fromCity');
+const toSel = document.getElementById('toCity');
+const departInput = document.getElementById('departDate');
+const returnInput = document.getElementById('returnDate');
+const returnField = returnInput.closest('.field');
+const errorMsg = document.getElementById('errorMsg');
+const resultsArea = document.getElementById('resultsArea');
+
+function fillSelect(sel, defaultCode){
+  cities.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = c.name;
+    if(c.code === defaultCode) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+fillSelect(fromSel, "RUH");
+fillSelect(toSel, "JED");
+
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+departInput.min = todayStr;
+departInput.value = todayStr;
+returnInput.min = todayStr;
+const tomorrow = new Date(today.getTime() + 86400000*3);
+returnInput.value = tomorrow.toISOString().split('T')[0];
+
+document.getElementById('swapBtn').addEventListener('click', ()=>{
+  const tmp = fromSel.value;
+  fromSel.value = toSel.value;
+  toSel.value = tmp;
+});
+
+function updateTripTypeUI(){
+  const type = document.querySelector('input[name=tripType]:checked').value;
+  if(type === 'oneway'){
+    returnField.style.display = 'none';
+  } else {
+    returnField.style.display = 'flex';
+  }
+}
+document.querySelectorAll('input[name=tripType]').forEach(r=>r.addEventListener('change', updateTripTypeUI));
+updateTripTypeUI();
+
+departInput.addEventListener('change', ()=>{
+  returnInput.min = departInput.value;
+  if(returnInput.value && returnInput.value < departInput.value){
+    returnInput.value = departInput.value;
+  }
+});
+
+// deterministic pseudo-random generator seeded by string, so same search => same prices
+function seededRandom(seed){
+  let h = 0;
+  for(let i=0;i<seed.length;i++){
+    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  }
+  return function(){
+    h = (Math.imul(h, 1103515245) + 12345) | 0;
+    return ((h >>> 0) % 10000) / 10000;
+  };
+}
+
+// rough base price per route based on a pseudo "distance" derived from city order in list
+function basePriceForRoute(fromCode, toCode){
+  const idxA = cities.findIndex(c=>c.code===fromCode);
+  const idxB = cities.findIndex(c=>c.code===toCode);
+  const dist = Math.abs(idxA - idxB) + 1;
+  return 250 + dist * 45; // SAR baseline
+}
+
+function formatTime(hour, min){
+  const h = String(hour).padStart(2,'0');
+  const m = String(min).padStart(2,'0');
+  return `${h}:${m}`;
+}
+
+function generateFlights(fromCode, toCode, dateStr){
+  const rand = seededRandom(fromCode + toCode + dateStr);
+  const base = basePriceForRoute(fromCode, toCode);
+  const flights = [];
+  airlines.forEach(al=>{
+    const numFlights = 1 + Math.floor(rand()*2); // 1-2 flights per airline
+    for(let i=0;i<numFlights;i++){
+      const depHour = 5 + Math.floor(rand()*17);
+      const depMin = Math.floor(rand()*4)*15;
+      const durationMin = 60 + Math.floor(rand()*90);
+      let arrHour = depHour + Math.floor(durationMin/60);
+      let arrMin = depMin + (durationMin%60);
+      if(arrMin >= 60){ arrMin -= 60; arrHour += 1; }
+      const priceVariation = 0.85 + rand()*0.5;
+      const price = Math.round(base * al.mult * priceVariation / 5) * 5;
+      const seatsLeft = Math.floor(rand()*9) + 1;
+      flights.push({
+        airline: al,
+        depTime: formatTime(depHour, depMin),
+        arrTime: formatTime(arrHour % 24, arrMin),
+        durationMin,
+        price,
+        seatsLeft
+      });
+    }
+  });
+  flights.sort((a,b)=>a.price-b.price);
+  return flights;
+}
+
+function cityName(code){
+  return cities.find(c=>c.code===code)?.name || code;
+}
+
+let selectedOutbound = null;
+let selectedReturn = null;
+
+function renderFlightCard(flight, sectionKey){
+  const durH = Math.floor(flight.durationMin/60);
+  const durM = flight.durationMin % 60;
+  const card = document.createElement('div');
+  card.className = 'flight-card';
+  card.dataset.section = sectionKey;
+  card.innerHTML = `
+    <div class="airline">
+      <div class="airline-logo" style="background:${flight.airline.color}">${flight.airline.code}</div>
+      <div>
+        <div class="airline-name">${flight.airline.name}</div>
+        <div class="airline-sub">رحلة مباشرة</div>
+      </div>
+    </div>
+    <div class="times">
+      <div class="time-block">
+        <div class="t">${flight.depTime}</div>
+        <div class="c">مغادرة</div>
+      </div>
+      <div class="duration">
+        <div>${durH}س ${durM}د</div>
+        <div class="line"></div>
+      </div>
+      <div class="time-block">
+        <div class="t">${flight.arrTime}</div>
+        <div class="c">وصول</div>
+      </div>
+    </div>
+    <div class="price-block">
+      <div class="price">${flight.price} <small>ر.س</small></div>
+      <div class="seats">${flight.seatsLeft <= 4 ? 'باقي ' + flight.seatsLeft + ' مقاعد فقط' : 'متوفر'}</div>
+    </div>
+  `;
+  card.addEventListener('click', ()=>{
+    document.querySelectorAll(`.flight-card[data-section="${sectionKey}"]`).forEach(el=>el.classList.remove('selected'));
+    card.classList.add('selected');
+    if(sectionKey === 'outbound') selectedOutbound = flight;
+    else selectedReturn = flight;
+    updateSummary();
+  });
+  return card;
+}
+
+function updateSummary(){
+  const bar = document.getElementById('summaryBar');
+  if(!bar) return;
+  const type = document.querySelector('input[name=tripType]:checked').value;
+  let total = 0;
+  let ready = false;
+  if(type === 'oneway'){
+    if(selectedOutbound){ total = selectedOutbound.price; ready = true; }
+  } else {
+    if(selectedOutbound) total += selectedOutbound.price;
+    if(selectedReturn) total += selectedReturn.price;
+    ready = selectedOutbound && selectedReturn;
+  }
+  bar.querySelector('.total span').textContent = total ? total + ' ر.س' : '—';
+  bar.querySelector('.confirm-btn').disabled = !ready;
+}
+
+function runSearch(){
+  errorMsg.style.display = 'none';
+  const type = document.querySelector('input[name=tripType]:checked').value;
+  const from = fromSel.value;
+  const to = toSel.value;
+  const depart = departInput.value;
+  const ret = returnInput.value;
+
+  if(from === to){
+    errorMsg.textContent = 'الرجاء اختيار مدينتين مختلفتين للمغادرة والوصول.';
+    errorMsg.style.display = 'block';
+    return;
+  }
+  if(!depart){
+    errorMsg.textContent = 'الرجاء تحديد تاريخ الذهاب.';
+    errorMsg.style.display = 'block';
+    return;
+  }
+  if(type === 'roundtrip'){
+    if(!ret){
+      errorMsg.textContent = 'الرجاء تحديد تاريخ العودة.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    if(ret < depart){
+      errorMsg.textContent = 'يجب أن يكون تاريخ العودة بعد تاريخ الذهاب.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+  }
+
+  selectedOutbound = null;
+  selectedReturn = null;
+  resultsArea.innerHTML = '';
+
+  const outboundFlights = generateFlights(from, to, depart);
+  const outSection = document.createElement('div');
+  outSection.innerHTML = `<div class="section-title">رحلة الذهاب: ${cityName(from)} ← ${cityName(to)} <span class="badge">${formatArabicDate(depart)}</span></div>`;
+  outboundFlights.forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound')));
+  resultsArea.appendChild(outSection);
+
+  if(type === 'roundtrip'){
+    const returnFlights = generateFlights(to, from, ret);
+    const retSection = document.createElement('div');
+    retSection.innerHTML = `<div class="section-title">رحلة العودة: ${cityName(to)} ← ${cityName(from)} <span class="badge">${formatArabicDate(ret)}</span></div>`;
+    returnFlights.forEach(f=>retSection.appendChild(renderFlightCard(f, 'return')));
+    resultsArea.appendChild(retSection);
+  }
+
+  const summaryBar = document.createElement('div');
+  summaryBar.className = 'summary-bar';
+  summaryBar.id = 'summaryBar';
+  summaryBar.innerHTML = `
+    <div class="total">الإجمالي: <span>—</span></div>
+    <button class="confirm-btn" disabled>متابعة الحجز</button>
+  `;
+  resultsArea.appendChild(summaryBar);
+  updateSummary();
+
+  resultsArea.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function formatArabicDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+document.getElementById('searchBtn').addEventListener('click', runSearch);
+
+// run an initial search on load for immediate demo
+runSearch();
+</script>
+
+<div class="container">
+  <p class="disclaimer">
+    * هذا الموقع عرض توضيحي (Demo) — الأسعار المعروضة تجريبية وليست أسعارًا حقيقية أو حية من شركات الطيران.<br>
+    لعرض أسعار حقيقية يلزم ربط الموقع بواجهة برمجية (API) رسمية من مزوّد بيانات طيران أو من شركات الطيران مباشرة.
+  </p>
+</div>
+
+</body>
+</html>
