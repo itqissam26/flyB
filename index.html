@@ -222,7 +222,13 @@
 
   .empty-note{text-align:center;color:var(--muted);font-size:13px;padding:20px;}
 
-  .sort-chips{display:flex;gap:8px;margin:4px 0 18px;flex-wrap:wrap;}
+  .filter-bar{
+    display:flex;flex-wrap:wrap;gap:18px;
+    margin:4px 0 18px;padding-bottom:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .filter-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .filter-label{font-size:13px;font-weight:800;color:var(--muted);}
   .chip{
     padding:8px 14px;border-radius:20px;
     border:1.5px solid var(--border);
@@ -336,7 +342,9 @@
   <div class="popular-title">🔥 الوجهات الأكثر بحثًا</div>
   <div class="popular-grid" id="popularGrid"></div>
 
-  <div class="results" id="resultsArea"></div>
+  <div class="results" id="resultsArea">
+    <p class="empty-note">✈️ اختر رحلتك واضغط "ابحث عن الرحلات"، أو اختر إحدى الوجهات الشائعة أدناه لعرض النتائج.</p>
+  </div>
 
   <div class="site-footer">
     <div class="brand">
@@ -505,7 +513,8 @@ const SORT_OPTIONS = [
 
 const state = {
   from:null, to:null, depart:null, ret:null, tripType:'roundtrip',
-  outboundFlights:[], returnFlights:[], sort:'price'
+  outboundFlights:[], returnFlights:[], sort:'price',
+  airlineFilter: new Set(airlines.map(a=>a.code))
 };
 
 function sortFlights(arr, criteria){
@@ -628,32 +637,66 @@ function runSearch(){
   resultsArea.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+function visibleFlights(arr){
+  return sortFlights(arr.filter(f=>state.airlineFilter.has(f.airline.code)), state.sort);
+}
+
+function appendNoMatchNote(container){
+  const note = document.createElement('p');
+  note.className = 'empty-note';
+  note.textContent = 'لا توجد رحلات مطابقة لهذا الفلتر ✈️';
+  container.appendChild(note);
+}
+
 function renderResults(){
   resultsArea.innerHTML = '';
   if(!state.outboundFlights.length) return;
 
-  const sortBar = document.createElement('div');
-  sortBar.className = 'sort-chips';
-  sortBar.innerHTML = SORT_OPTIONS.map(o=>
-    `<button type="button" class="chip ${state.sort===o.key?'active':''}" data-sort="${o.key}">${o.icon} ${o.label}</button>`
-  ).join('');
-  sortBar.querySelectorAll('.chip').forEach(btn=>{
+  const filterBar = document.createElement('div');
+  filterBar.className = 'filter-bar';
+  filterBar.innerHTML = `
+    <div class="filter-group">
+      <span class="filter-label">شركة الطيران:</span>
+      ${airlines.map(al=>
+        `<button type="button" class="chip airline-chip ${state.airlineFilter.has(al.code)?'active':''}" data-code="${al.code}">${al.name}</button>`
+      ).join('')}
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">الترتيب:</span>
+      ${SORT_OPTIONS.map(o=>
+        `<button type="button" class="chip sort-chip ${state.sort===o.key?'active':''}" data-sort="${o.key}">${o.icon} ${o.label}</button>`
+      ).join('')}
+    </div>
+  `;
+  filterBar.querySelectorAll('.airline-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const code = btn.dataset.code;
+      if(state.airlineFilter.has(code)) state.airlineFilter.delete(code);
+      else state.airlineFilter.add(code);
+      renderResults();
+    });
+  });
+  filterBar.querySelectorAll('.sort-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       state.sort = btn.dataset.sort;
       renderResults();
     });
   });
-  resultsArea.appendChild(sortBar);
+  resultsArea.appendChild(filterBar);
 
+  const outboundVisible = visibleFlights(state.outboundFlights);
   const outSection = document.createElement('div');
   outSection.innerHTML = `<div class="section-title">رحلة الذهاب: ${cityName(state.from)} ← ${cityName(state.to)} <span class="badge">${formatArabicDate(state.depart)}</span></div>`;
-  sortFlights(state.outboundFlights, state.sort).forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound')));
+  if(outboundVisible.length) outboundVisible.forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound')));
+  else appendNoMatchNote(outSection);
   resultsArea.appendChild(outSection);
 
   if(state.tripType === 'roundtrip'){
+    const returnVisible = visibleFlights(state.returnFlights);
     const retSection = document.createElement('div');
     retSection.innerHTML = `<div class="section-title">رحلة العودة: ${cityName(state.to)} ← ${cityName(state.from)} <span class="badge">${formatArabicDate(state.ret)}</span></div>`;
-    sortFlights(state.returnFlights, state.sort).forEach(f=>retSection.appendChild(renderFlightCard(f, 'return')));
+    if(returnVisible.length) returnVisible.forEach(f=>retSection.appendChild(renderFlightCard(f, 'return')));
+    else appendNoMatchNote(retSection);
     resultsArea.appendChild(retSection);
   }
 
@@ -706,9 +749,7 @@ function renderPopularDestinations(){
 
 document.getElementById('searchBtn').addEventListener('click', runSearch);
 
-// run an initial search on load for immediate demo
 renderPopularDestinations();
-runSearch();
 </script>
 
 </body>
