@@ -85,8 +85,10 @@
   :focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:4px;}
   button{font-family:inherit;}
 
-  /* Numeric alignment for prices/times */
-  .num{font-variant-numeric:tabular-nums;}
+  /* Numeric alignment for prices/times + isolate Latin/number runs in RTL */
+  .num{font-variant-numeric:tabular-nums;unicode-bidi:isolate;}
+  .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;}
+  .brand-text{unicode-bidi:isolate;}
 
   /* ===== Top navigation ===== */
   .topnav{
@@ -524,7 +526,7 @@
     <div class="nav-actions">
       <div class="nav-pill" style="cursor:default" title="العملة واللغة">
         <svg class="icon"><use href="#i-globe"/></svg>
-        <span class="num">SAR</span> · العربية
+        <span>العربية · <span class="ltr">SAR</span></span>
       </div>
       <button type="button" class="nav-pill theme-toggle" id="themeToggle" aria-label="تبديل الوضع الليلي" title="تبديل الوضع الليلي">
         <svg class="icon i-moon"><use href="#i-moon"/></svg>
