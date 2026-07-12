@@ -111,6 +111,12 @@
     transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease);
   }
   .nav-pill:hover{border-color:var(--primary);}
+  .nav-pill select{
+    border:none;background:transparent;color:var(--text);
+    font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;
+    min-height:auto;padding:0;
+  }
+  .nav-pill select:focus{outline:none;box-shadow:none;}
   .theme-toggle{
     width:40px;height:40px;padding:0;justify-content:center;border-radius:50%;
   }
@@ -353,7 +359,32 @@
     background:var(--primary);color:#fff;font-weight:800;font-size:12px;
     padding:3px 9px;border-radius:8px;
   }
+  .reviews-count{font-size:11px;color:var(--muted);font-weight:600;}
+  .map-link{color:var(--primary);text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:3px;}
+  .map-link .icon{width:12px;height:12px;}
+  .map-link:hover{text-decoration:underline;}
   .amenities{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+
+  /* Range-slider filter (price) */
+  .range-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .range-filter input[type=range]{accent-color:var(--primary);cursor:pointer;min-height:auto;width:150px;}
+  .range-val{font-weight:800;color:var(--primary-dark);font-size:13px;}
+  [data-theme="dark"] .range-val{color:var(--primary);}
+
+  /* Nearby-days price calendar strip */
+  .price-cal{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;}
+  .cal-day{
+    flex:0 0 auto;min-width:82px;text-align:center;cursor:pointer;font-family:inherit;
+    border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--surface);padding:8px 10px;transition:all var(--dur) var(--ease);
+  }
+  .cal-day:hover{border-color:var(--primary);}
+  .cal-day.active{border-color:var(--primary);background:var(--primary-tint);}
+  .cal-day .cd{font-size:11px;color:var(--muted);}
+  .cal-day .cp{font-size:13px;font-weight:800;color:var(--primary-dark);margin-top:3px;}
+  [data-theme="dark"] .cal-day .cp{color:var(--primary);}
+  .cal-day.cheapest{border-color:var(--success);}
+  .cal-day.cheapest .cp{color:var(--success);}
   .amenity-badge{
     display:inline-flex;align-items:center;gap:5px;
     font-size:11px;background:var(--surface-2);border:1px solid var(--border);
@@ -540,10 +571,15 @@
       <span class="brand-text">Fly<span class="accent-b">B</span></span>
     </div>
     <div class="nav-actions">
-      <div class="nav-pill" style="cursor:default" title="العملة واللغة">
+      <label class="nav-pill" title="العملة" for="currencySel">
         <svg class="icon"><use href="#i-globe"/></svg>
-        <span>العربية · <span class="ltr">SAR</span></span>
-      </div>
+        <select id="currencySel" aria-label="اختيار العملة">
+          <option value="SAR">ر.س SAR</option>
+          <option value="USD">$ USD</option>
+          <option value="AED">د.إ AED</option>
+          <option value="EUR">€ EUR</option>
+        </select>
+      </label>
       <button type="button" class="nav-pill theme-toggle" id="themeToggle" aria-label="تبديل الوضع الليلي" title="تبديل الوضع الليلي">
         <svg class="icon i-moon"><use href="#i-moon"/></svg>
         <svg class="icon i-sun"><use href="#i-sun"/></svg>
@@ -820,6 +856,19 @@ const resultsArea = document.getElementById('resultsArea');
 const CABIN_FACTOR = { economy:1, business:2.6 };
 const CABIN_LABEL = { economy:'الاقتصادية', business:'رجال الأعمال' };
 
+// ----- Currency (all base prices are in SAR) -----
+const CURRENCIES = {
+  SAR:{rate:1,     symbol:'ر.س'},
+  USD:{rate:0.267, symbol:'$'},
+  AED:{rate:0.98,  symbol:'د.إ'},
+  EUR:{rate:0.245, symbol:'€'},
+};
+let currentCurrency = 'SAR';
+try { const c = localStorage.getItem('flyb-currency'); if(c && CURRENCIES[c]) currentCurrency = c; } catch(e){}
+function convertSar(sar){ return Math.round(sar * CURRENCIES[currentCurrency].rate); }
+function money(sar){ return `<span class="num">${convertSar(sar).toLocaleString('en-US')}</span> <small>${CURRENCIES[currentCurrency].symbol}</small>`; }
+function moneyPlain(sar){ return convertSar(sar).toLocaleString('en-US') + ' ' + CURRENCIES[currentCurrency].symbol; }
+
 function fillSelect(sel, defaultCode){
   cities.forEach(c=>{
     const opt = document.createElement('option');
@@ -949,6 +998,18 @@ themeToggle.addEventListener('click', ()=>{
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
 
+// ----- Currency selector -----
+const currencySel = document.getElementById('currencySel');
+currencySel.value = currentCurrency;
+currencySel.addEventListener('change', ()=>{
+  currentCurrency = currencySel.value;
+  try { localStorage.setItem('flyb-currency', currentCurrency); } catch(e){}
+  // re-render whatever is currently on screen with the new currency
+  if(activeService === 'flights' && state.outboundFlights.length) renderResults();
+  else if(activeService === 'hotels' && hotelState.hotels.length) renderHotelResults();
+  renderPopularDestinations();
+});
+
 // deterministic pseudo-random generator seeded by string, so same search => same prices
 function seededRandom(seed){
   let h = 0;
@@ -1065,8 +1126,16 @@ const state = {
   adults:1, children:0, cabin:'economy',
   outboundFlights:[], returnFlights:[], sort:'price',
   airlineFilter: new Set(airlines.map(a=>a.code)),
-  directOnly:false
+  directOnly:false, timeFilter:'all', maxPrice:null
 };
+
+const TIME_OF_DAY = [
+  {key:'all',     label:'الكل',   icon:'i-filter'},
+  {key:'morning', label:'صباحًا', icon:'i-sun'},
+  {key:'noon',    label:'ظهرًا',  icon:'i-sun'},
+  {key:'evening', label:'مساءً',  icon:'i-clock'},
+  {key:'night',   label:'ليلًا',  icon:'i-moon'},
+];
 
 // per-person price for the chosen cabin, and total across passengers
 function paxCount(){ return state.adults + state.children; }
@@ -1093,8 +1162,7 @@ function renderFlightCard(flight, sectionKey, isCheapest){
   const stopsText = flight.stops === 0
     ? `${icon('i-plane')} رحلة مباشرة`
     : `${icon('i-clock')} توقف واحد في ${cityName(flight.stopCity)}`;
-  const perPerson = farePerPerson(flight);
-  const perNote = paxCount() > 1 ? `<div class="c num">${perPerson} ر.س / للمسافر</div>` : '';
+  const perNote = paxCount() > 1 ? `<div class="c">${moneyPlain(farePerPerson(flight))} / للمسافر</div>` : '';
   card.innerHTML = `
     <div class="airline">
       <div class="airline-logo" title="${flight.airline.name}">
@@ -1121,7 +1189,7 @@ function renderFlightCard(flight, sectionKey, isCheapest){
       </div>
     </div>
     <div class="price-block">
-      <div class="price"><span class="num">${fareTotal(flight)}</span> <small>ر.س</small></div>
+      <div class="price">${money(fareTotal(flight))}</div>
       ${perNote}
       <div class="seats" style="${flight.seatsLeft <= 4 ? '' : 'color:var(--success)'}">${flight.seatsLeft <= 4 ? icon('i-alert') + ' باقي ' + flight.seatsLeft + ' مقاعد فقط' : icon('i-check') + ' متوفر'}</div>
     </div>
@@ -1149,7 +1217,7 @@ function updateSummary(){
     if(selectedReturn) total += fareTotal(selectedReturn);
     ready = selectedOutbound && selectedReturn;
   }
-  bar.querySelector('.total span').textContent = total ? total + ' ر.س' : '—';
+  bar.querySelector('.total span').textContent = total ? moneyPlain(total) : '—';
   bar.querySelector('.confirm-btn').disabled = !ready;
 }
 
@@ -1182,6 +1250,8 @@ function runSearch(){
   state.sort = 'price';
   state.airlineFilter = new Set(airlines.map(a=>a.code));
   state.directOnly = false;
+  state.timeFilter = 'all';
+  state.maxPrice = null;
   state.outboundFlights = generateFlights(from, to, depart);
   state.returnFlights = type === 'roundtrip' ? generateFlights(to, from, ret) : [];
 
@@ -1194,11 +1264,59 @@ function runSearch(){
 function visibleFlights(arr){
   let list = arr.filter(f=>state.airlineFilter.has(f.airline.code));
   if(state.directOnly) list = list.filter(f=>f.stops === 0);
+  if(state.timeFilter !== 'all') list = list.filter(f=>f.timeOfDay === state.timeFilter);
+  if(state.maxPrice != null) list = list.filter(f=>farePerPerson(f) <= state.maxPrice);
   return sortFlights(list, state.sort);
 }
 
 function cheapestOf(list){
   return list.reduce((m,f)=> (m===null || f.price < m.price) ? f : m, null);
+}
+
+function shiftDate(dateStr, days){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+function dayCheapestFare(fromC, toC, dateStr){
+  const fl = generateFlights(fromC, toC, dateStr);
+  if(!fl.length) return null;
+  const minP = Math.min(...fl.map(f=>f.price));
+  return Math.round(minP * CABIN_FACTOR[state.cabin] / 5) * 5; // per person, chosen cabin
+}
+function buildPriceCalendar(){
+  const box = document.createElement('div');
+  box.innerHTML = `<div class="popular-title" style="font-size:15px;margin:6px 0 8px">${icon('i-tag')} أسعار الأيام المجاورة (أرخص سعر لكل مسافر)</div>`;
+  const strip = document.createElement('div');
+  strip.className = 'price-cal';
+  const todayS = new Date().toISOString().split('T')[0];
+  const dayNames = ['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+  const days = [];
+  for(let off=-3; off<=3; off++){
+    const ds = shiftDate(state.depart, off);
+    if(ds >= todayS) days.push(ds);
+  }
+  const fares = days.map(ds=>({ ds, fare: dayCheapestFare(state.from, state.to, ds) }));
+  const valid = fares.map(f=>f.fare).filter(v=>v != null);
+  const minFare = valid.length ? Math.min(...valid) : null;
+  fares.forEach(({ds, fare})=>{
+    const d = new Date(ds + 'T00:00:00');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-day' + (ds === state.depart ? ' active' : '') + (fare != null && fare === minFare ? ' cheapest' : '');
+    btn.innerHTML = `<div class="cd">${dayNames[d.getDay()]} <span class="num">${d.getDate()}/${d.getMonth()+1}</span></div><div class="cp">${fare != null ? moneyPlain(fare) : '—'}</div>`;
+    btn.addEventListener('click', ()=>{
+      state.depart = ds;
+      departInput.value = ds;
+      if(returnInput.value && returnInput.value < ds){ returnInput.value = ds; state.ret = ds; }
+      state.outboundFlights = generateFlights(state.from, state.to, ds);
+      if(state.tripType === 'roundtrip') state.returnFlights = generateFlights(state.to, state.from, state.ret);
+      renderResults();
+    });
+    strip.appendChild(btn);
+  });
+  box.appendChild(strip);
+  return box;
 }
 
 function appendNoMatchNote(container){
@@ -1215,6 +1333,12 @@ function renderResults(){
     state.outboundFlights.some(f=>f.airline.code===al.code) ||
     state.returnFlights.some(f=>f.airline.code===al.code)
   );
+
+  // price bounds (per person, chosen cabin) across all flights, for the range filter
+  const allFlights = state.outboundFlights.concat(state.returnFlights);
+  const fMin = Math.min(...allFlights.map(farePerPerson));
+  const fMax = Math.max(...allFlights.map(farePerPerson));
+  if(state.maxPrice == null || state.maxPrice > fMax || state.maxPrice < fMin) state.maxPrice = fMax;
 
   const outboundVisible = visibleFlights(state.outboundFlights);
   const returnVisible = state.tripType === 'roundtrip' ? visibleFlights(state.returnFlights) : [];
@@ -1242,12 +1366,30 @@ function renderResults(){
       <button type="button" class="chip direct-chip ${state.directOnly?'active':''}">${icon('i-plane')} مباشرة فقط</button>
     </div>
     <div class="filter-group">
+      <span class="filter-label">${icon('i-clock')} وقت المغادرة:</span>
+      ${TIME_OF_DAY.map(t=>
+        `<button type="button" class="chip time-chip ${state.timeFilter===t.key?'active':''}" data-time="${t.key}">${icon(t.icon)} ${t.label}</button>`
+      ).join('')}
+    </div>
+    <div class="filter-group range-filter">
+      <span class="filter-label">${icon('i-tag')} السعر حتى:</span>
+      <input type="range" id="flightPriceRange" min="${fMin}" max="${fMax}" step="5" value="${state.maxPrice}">
+      <span class="range-val" id="flightPriceVal">${moneyPlain(state.maxPrice)}</span>
+    </div>
+    <div class="filter-group">
       <span class="filter-label">${icon('i-filter')} الترتيب:</span>
       ${SORT_OPTIONS.map(o=>
         `<button type="button" class="chip sort-chip ${state.sort===o.key?'active':''}" data-sort="${o.key}">${icon(o.icon)} ${o.label}</button>`
       ).join('')}
     </div>
   `;
+  const fRange = filterBar.querySelector('#flightPriceRange');
+  const fVal = filterBar.querySelector('#flightPriceVal');
+  fRange.addEventListener('input', ()=>{ fVal.textContent = moneyPlain(Number(fRange.value)); });
+  fRange.addEventListener('change', ()=>{ state.maxPrice = Number(fRange.value); renderResults(); });
+  filterBar.querySelectorAll('.time-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ state.timeFilter = btn.dataset.time; renderResults(); });
+  });
   filterBar.querySelectorAll('.airline-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const code = btn.dataset.code;
@@ -1267,6 +1409,7 @@ function renderResults(){
     });
   });
   resultsArea.appendChild(filterBar);
+  resultsArea.appendChild(buildPriceCalendar());
 
   const cheapestOut = cheapestOf(outboundVisible);
   const outSection = document.createElement('div');
@@ -1359,7 +1502,8 @@ function generateHotels(cityCode, checkIn, checkOut){
     const shuffledAmenities = AMENITIES_POOL.slice().sort(()=>rand()-0.5);
     const amenities = shuffledAmenities.slice(0, 2 + Math.floor(rand()*3));
     const rating = Math.round((6 + rand()*3.5) * 10) / 10; // 6.0 - 9.5
-    hotels.push({ name, stars, pricePerNight, image, location, amenities, rating });
+    const reviews = 80 + Math.floor(rand()*4900); // 80 - ~5000 reviews
+    hotels.push({ name, stars, pricePerNight, image, location, amenities, rating, reviews });
   }
   return hotels;
 }
@@ -1378,7 +1522,7 @@ const HOTEL_SORT_OPTIONS = [
 
 const hotelState = {
   city:null, checkIn:null, checkOut:null, nights:0, rooms:1, guests:2,
-  hotels:[], sort:'price', starFilter:new Set([3,4,5])
+  hotels:[], sort:'price', starFilter:new Set([3,4,5]), maxPrice:null
 };
 
 let selectedHotel = null;
@@ -1389,26 +1533,28 @@ function renderHotelCard(hotel){
   if(hotel === selectedHotel) card.classList.add('selected');
   const total = hotel.pricePerNight * hotelState.nights * hotelState.rooms;
   const starsHtml = Array.from({length:hotel.stars}, ()=>`<svg class="icon icon-fill"><use href="#i-star"/></svg>`).join('');
+  const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(hotel.name + ' ' + cityName(hotelState.city));
   card.innerHTML = `
     <img class="hotel-thumb" src="${hotel.image}" alt="${hotel.name}" loading="lazy">
     <div class="hotel-info">
       <div class="hotel-name">${hotel.name}</div>
-      <div class="hotel-stars">${starsHtml} <span class="rating-pill num">${icon('i-star')} ${hotel.rating.toFixed(1)}</span></div>
-      <div class="hotel-location">${icon('i-pin')} ${hotel.location}</div>
+      <div class="hotel-stars">${starsHtml} <span class="rating-pill num">${icon('i-star')} ${hotel.rating.toFixed(1)}</span> <span class="reviews-count num">(${hotel.reviews.toLocaleString('en-US')} تقييم)</span></div>
+      <div class="hotel-location">${icon('i-pin')} ${hotel.location} · <a class="map-link" href="${mapsUrl}" target="_blank" rel="noopener">${icon('i-globe')} الموقع على الخريطة</a></div>
       <div class="amenities">${hotel.amenities.map(a=>`<span class="amenity-badge">${icon(AMENITY_ICONS[a]||'i-check')} ${a}</span>`).join('')}</div>
     </div>
     <div class="hotel-price-block">
-      <div class="price"><span class="num">${hotel.pricePerNight}</span> <small>ر.س/ليلة</small></div>
-      <div class="seats" style="color:var(--muted)">الإجمالي: <span class="num">${total}</span> ر.س</div>
+      <div class="price">${money(hotel.pricePerNight)}<small>/ليلة</small></div>
+      <div class="seats" style="color:var(--muted)">الإجمالي: ${moneyPlain(total)}</div>
     </div>
   `;
+  card.querySelector('.map-link').addEventListener('click', e=>e.stopPropagation());
   card.addEventListener('click', ()=>{
     document.querySelectorAll('.hotel-card').forEach(el=>el.classList.remove('selected'));
     card.classList.add('selected');
     selectedHotel = hotel;
     const bar = document.getElementById('hotelSummaryBar');
     if(bar){
-      bar.querySelector('.total span').textContent = (hotel.pricePerNight * hotelState.nights * hotelState.rooms) + ' ر.س';
+      bar.querySelector('.total span').textContent = moneyPlain(hotel.pricePerNight * hotelState.nights * hotelState.rooms);
       bar.querySelector('.confirm-btn').disabled = false;
     }
   });
@@ -1419,6 +1565,12 @@ function renderHotelResults(){
   resultsArea.innerHTML = '';
   if(!hotelState.hotels.length) return;
 
+  const priceMin = Math.min(...hotelState.hotels.map(h=>h.pricePerNight));
+  const priceMax = Math.max(...hotelState.hotels.map(h=>h.pricePerNight));
+  if(hotelState.maxPrice === null || hotelState.maxPrice > priceMax || hotelState.maxPrice < priceMin){
+    hotelState.maxPrice = priceMax;
+  }
+
   const filterBar = document.createElement('div');
   filterBar.className = 'filter-bar';
   filterBar.innerHTML = `
@@ -1428,6 +1580,11 @@ function renderHotelResults(){
         `<button type="button" class="chip star-chip ${hotelState.starFilter.has(s)?'active':''}" data-star="${s}">${s} ${icon('i-star')}</button>`
       ).join('')}
     </div>
+    <div class="filter-group range-filter">
+      <span class="filter-label">${icon('i-tag')} السعر/ليلة حتى:</span>
+      <input type="range" id="hotelPriceRange" min="${priceMin}" max="${priceMax}" step="5" value="${hotelState.maxPrice}">
+      <span class="range-val" id="hotelPriceVal">${moneyPlain(hotelState.maxPrice)}</span>
+    </div>
     <div class="filter-group">
       <span class="filter-label">${icon('i-filter')} الترتيب:</span>
       ${HOTEL_SORT_OPTIONS.map(o=>
@@ -1435,6 +1592,10 @@ function renderHotelResults(){
       ).join('')}
     </div>
   `;
+  const priceRange = filterBar.querySelector('#hotelPriceRange');
+  const priceVal = filterBar.querySelector('#hotelPriceVal');
+  priceRange.addEventListener('input', ()=>{ priceVal.textContent = moneyPlain(Number(priceRange.value)); });
+  priceRange.addEventListener('change', ()=>{ hotelState.maxPrice = Number(priceRange.value); renderHotelResults(); });
   filterBar.querySelectorAll('.star-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const s = Number(btn.dataset.star);
@@ -1456,7 +1617,7 @@ function renderHotelResults(){
   title.innerHTML = `${icon('i-bed')} الفنادق في ${cityName(hotelState.city)} <span class="badge">${formatArabicDate(hotelState.checkIn)} ${icon('i-arrow')} ${formatArabicDate(hotelState.checkOut)} (${hotelState.nights} ${hotelState.nights===1?'ليلة':'ليالٍ'})</span>`;
   resultsArea.appendChild(title);
 
-  const visible = sortHotels(hotelState.hotels.filter(h=>hotelState.starFilter.has(h.stars)), hotelState.sort);
+  const visible = sortHotels(hotelState.hotels.filter(h=>hotelState.starFilter.has(h.stars) && h.pricePerNight <= hotelState.maxPrice), hotelState.sort);
   if(visible.length){
     visible.forEach(h=>resultsArea.appendChild(renderHotelCard(h)));
   } else {
@@ -1495,6 +1656,7 @@ function runHotelSearch(){
   hotelState.guests = Number(guestsSel.value);
   hotelState.sort = 'price';
   hotelState.starFilter = new Set([3,4,5]);
+  hotelState.maxPrice = null;
   hotelState.hotels = generateHotels(city, checkIn, checkOut);
 
   renderSkeleton(4);
@@ -1521,7 +1683,7 @@ function renderPopularDestinations(){
     card.type = 'button';
     card.className = 'dest-card';
     card.style.backgroundImage = `url('${destinationImages[code]}')`;
-    card.innerHTML = `<div class="city">${icon('i-pin')} ${cityName(code)}</div><div class="from-price">ابتداءً من <span class="num">${price}</span> ر.س</div>`;
+    card.innerHTML = `<div class="city">${icon('i-pin')} ${cityName(code)}</div><div class="from-price">ابتداءً من ${moneyPlain(price)}</div>`;
     card.addEventListener('click', ()=>{
       switchService('flights');
       toSel.value = code;
