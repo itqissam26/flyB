@@ -362,6 +362,18 @@
   }
   .best-badge .icon{width:11px;height:11px;}
 
+  .deal-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:var(--primary-tint);color:var(--primary-dark);font-size:11px;font-weight:800;
+    padding:3px 9px;border-radius:6px;margin-bottom:6px;
+  }
+  [data-theme="dark"] .deal-badge{color:var(--primary);}
+  .price-original{font-size:12px;color:var(--text-muted,var(--muted));text-decoration:line-through;margin-bottom:1px;}
+  .urgency-line{font-size:11px;color:var(--accent-dark);display:flex;align-items:center;gap:4px;margin-top:3px;}
+  .urgency-line .icon{width:12px;height:12px;}
+  .viewers-line{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:3px;}
+  .viewers-line .icon{width:12px;height:12px;}
+
   .results-info{
     display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
     margin:2px 0 12px;font-size:13px;font-weight:700;color:var(--muted);
@@ -570,6 +582,7 @@
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
   <symbol id="i-swap" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/></symbol>
   <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.7-3-1-5-1-5 3 1 5 3.5 5 6.5a5 5 0 1 1-10 0c0-1.3.5-2.5 1.2-3.5.6.9 1.5 1.5 2.3 1.5z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-8.6-8.6a2 2 0 0 1-.4-2.2V4a1 1 0 0 1 1-1h7.2a2 2 0 0 1 1.4.6l8.6 8.6a1.8 1.8 0 0 1 0 2.6z"/><path d="M7.5 7.5h.01"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
@@ -1066,6 +1079,8 @@ const T = {
     direct:"رحلة مباشرة", directShort:"مباشرة", stopIn:"توقف واحد في", stop1:"توقف 1",
     depart:"مغادرة", arrive:"وصول", seatsLeft:"مقاعد فقط", seatsLeftPre:"باقي", available:"متوفر",
     perTraveler:"للمسافر", cheapest:"الأرخص", total:"الإجمالي:", continueBooking:"متابعة الحجز",
+    savedPct:"وفّرت {pct}%", viewersFlight:"{n} يشوفون هذه الرحلة الآن", viewersHotel:"{n} يشاهدون هذا الفندق الآن",
+    seatsAtPrice:"باقي {n} مقاعد بهذا السعر", roomsAtPrice:"باقي {n} غرف بهذا السعر", demoTag:"عرض تجريبي",
     airline:"شركة الطيران:", stopsLabel:"التوقفات:", directOnly:"مباشرة فقط",
     departTime:"وقت المغادرة:", priceUpTo:"السعر حتى:", sortLabel:"الترتيب:",
     sortCheapest:"الأرخص", sortEarliest:"الأقرب موعدًا", sortFastest:"الأسرع", topRated:"الأعلى تقييمًا",
@@ -1089,7 +1104,7 @@ const T = {
     ftAbout:"من نحن", ftContact:"اتصل بنا", ftCareers:"الوظائف",
     ftFaq:"الأسئلة الشائعة", ftPrivacy:"سياسة الخصوصية", ftTerms:"الشروط والأحكام",
     ftBlurb:"محرك بحث ومقارنة أسعار تذاكر الطيران والفنادق حول العالم.",
-    disclaimer:"* هذا الموقع عرض توضيحي (Demo) — الأسعار المعروضة تجريبية وليست أسعارًا حقيقية أو حية من شركات الطيران. لعرض أسعار حقيقية يلزم ربط الموقع بواجهة برمجية (API) رسمية. صور المدن مصدرها Wikimedia Commons.",
+    disclaimer:"* هذا الموقع عرض توضيحي (Demo) — الأسعار المعروضة تجريبية وليست أسعارًا حقيقية أو حية من شركات الطيران. لعرض أسعار حقيقية يلزم ربط الموقع بواجهة برمجية (API) رسمية. شارات الخصم وعدد المشاهدين والمقاعد/الغرف المتبقية هي عناصر تصميمية توضيحية وليست بيانات حقيقية. صور المدن مصدرها Wikimedia Commons.",
     months:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
     days:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'],
     daysShort:['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'],
@@ -1119,6 +1134,8 @@ const T = {
     direct:"Direct flight", directShort:"Direct", stopIn:"1 stop in", stop1:"1 stop",
     depart:"Depart", arrive:"Arrive", seatsLeft:"seats left", seatsLeftPre:"Only", available:"Available",
     perTraveler:"per traveler", cheapest:"Cheapest", total:"Total:", continueBooking:"Continue booking",
+    savedPct:"Save {pct}%", viewersFlight:"{n} people viewing this flight now", viewersHotel:"{n} people viewing this hotel now",
+    seatsAtPrice:"Only {n} seats left at this price", roomsAtPrice:"Only {n} rooms left at this price", demoTag:"Demo offer",
     airline:"Airline:", stopsLabel:"Stops:", directOnly:"Direct only",
     departTime:"Departure time:", priceUpTo:"Price up to:", sortLabel:"Sort:",
     sortCheapest:"Cheapest", sortEarliest:"Earliest", sortFastest:"Fastest", topRated:"Top rated",
@@ -1142,7 +1159,7 @@ const T = {
     ftAbout:"About us", ftContact:"Contact", ftCareers:"Careers",
     ftFaq:"FAQ", ftPrivacy:"Privacy policy", ftTerms:"Terms & conditions",
     ftBlurb:"A search and price-comparison engine for flights and hotels worldwide.",
-    disclaimer:"* This site is a demo — prices shown are simulated, not real or live from airlines. Real prices require connecting to an official flight-data API. City photos are from Wikimedia Commons.",
+    disclaimer:"* This site is a demo — prices shown are simulated, not real or live from airlines. Real prices require connecting to an official flight-data API. Discount badges, viewer counts, and remaining seats/rooms are illustrative UI elements, not real data. City photos are from Wikimedia Commons.",
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
     days:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     daysShort:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
@@ -1150,6 +1167,11 @@ const T = {
   }
 };
 function t(key){ return (T[lang] && T[lang][key] != null) ? T[lang][key] : key; }
+function tf(key, params){
+  let s = t(key);
+  Object.keys(params||{}).forEach(k=>{ s = s.replace('{'+k+'}', params[k]); });
+  return s;
+}
 
 const OPT_LABELS = {
   adultsCount:  { ar:['','بالغ واحد','بالغان','3 بالغين','4 بالغين','5 بالغين','6 بالغين'], en:['','1 adult','2 adults','3 adults','4 adults','5 adults','6 adults'] },
@@ -1390,12 +1412,17 @@ function generateFlights(fromCode, toCode, dateStr){
       let price = base * al.mult * priceVariation * (stops === 0 ? 1.08 : 0.9);
       price = Math.round(price / 5) * 5;
       const seatsLeft = Math.floor(rand()*9) + 1;
+      const hasDeal = rand() < 0.45;
+      const discountPercent = hasDeal ? 8 + Math.floor(rand()*13) : 0; // 8-20%
+      const originalPrice = hasDeal ? Math.round(price / (1 - discountPercent/100) / 5) * 5 : price;
+      const viewers = 3 + Math.floor(rand()*38);
       flights.push({
         airline: al,
         depTime: formatTime(depHour, depMin),
         arrTime: formatTime(arrHour % 24, arrMin),
         durationMin,
         price,           // per-person, economy base
+        originalPrice, discountPercent, viewers,
         seatsLeft,
         stops,
         stopCity,
@@ -1451,6 +1478,10 @@ const TIME_OF_DAY = [
 function paxCount(){ return state.adults + state.children; }
 function farePerPerson(flight){ return Math.round(flight.price * CABIN_FACTOR[state.cabin] / 5) * 5; }
 function fareTotal(flight){ return farePerPerson(flight) * paxCount(); }
+function fareTotalOriginal(flight){
+  const perPerson = Math.round(flight.originalPrice * CABIN_FACTOR[state.cabin] / 5) * 5;
+  return perPerson * paxCount();
+}
 
 function sortFlights(arr, criteria){
   const copy = arr.slice();
@@ -1500,9 +1531,13 @@ function renderFlightCard(flight, sectionKey, isCheapest){
       </div>
     </div>
     <div class="price-block">
+      ${flight.discountPercent > 0 ? `<span class="deal-badge">${icon('i-tag')} ${tf('savedPct',{pct:flight.discountPercent})}</span><div class="price-original">${moneyPlain(fareTotalOriginal(flight))}</div>` : ''}
       <div class="price">${money(fareTotal(flight))}</div>
       ${perNote}
-      <div class="seats" style="${flight.seatsLeft <= 4 ? '' : 'color:var(--success)'}">${flight.seatsLeft <= 4 ? icon('i-alert') + ' ' + t('seatsLeftPre') + ' ' + flight.seatsLeft + ' ' + t('seatsLeft') : icon('i-check') + ' ' + t('available')}</div>
+      ${flight.seatsLeft <= 4
+        ? `<div class="urgency-line">${icon('i-flame')} ${tf('seatsAtPrice',{n:flight.seatsLeft})}</div>`
+        : `<div class="seats" style="color:var(--success)">${icon('i-check')} ${t('available')}</div>`}
+      <div class="viewers-line">${icon('i-eye')} ${tf('viewersFlight',{n:flight.viewers})}</div>
     </div>
   `;
   card.addEventListener('click', ()=>{
@@ -1794,7 +1829,12 @@ function generateHotels(cityCode, checkIn, checkOut){
     const amenityKeys = shuffledAmenities.slice(0, 2 + Math.floor(rand()*3));
     const rating = Math.round((6 + rand()*3.5) * 10) / 10; // 6.0 - 9.5
     const reviews = 80 + Math.floor(rand()*4900); // 80 - ~5000 reviews
-    hotels.push({ nameKey, cityCode, stars, pricePerNight, image, locKey, amenityKeys, rating, reviews });
+    const hasDeal = rand() < 0.45;
+    const discountPercent = hasDeal ? 8 + Math.floor(rand()*17) : 0; // 8-24%
+    const originalPricePerNight = hasDeal ? Math.round(pricePerNight / (1 - discountPercent/100) / 5) * 5 : pricePerNight;
+    const roomsLeft = 1 + Math.floor(rand()*6); // 1-6
+    const viewers = 4 + Math.floor(rand()*46);
+    hotels.push({ nameKey, cityCode, stars, pricePerNight, originalPricePerNight, discountPercent, roomsLeft, viewers, image, locKey, amenityKeys, rating, reviews });
   }
   return hotels;
 }
@@ -1836,8 +1876,11 @@ function renderHotelCard(hotel){
       <div class="amenities">${hotel.amenityKeys.map(k=>`<span class="amenity-badge">${icon(AMENITY_ICONS[k]||'i-check')} ${t(k)}</span>`).join('')}</div>
     </div>
     <div class="hotel-price-block">
+      ${hotel.discountPercent > 0 ? `<span class="deal-badge">${icon('i-tag')} ${tf('savedPct',{pct:hotel.discountPercent})}</span><div class="price-original">${moneyPlain(hotel.originalPricePerNight)}</div>` : ''}
       <div class="price">${money(hotel.pricePerNight)}<small>${t('perNight')}</small></div>
       <div class="seats" style="color:var(--muted)">${t('total')} ${moneyPlain(total)}</div>
+      ${hotel.roomsLeft <= 4 ? `<div class="urgency-line">${icon('i-flame')} ${tf('roomsAtPrice',{n:hotel.roomsLeft})}</div>` : ''}
+      <div class="viewers-line">${icon('i-eye')} ${tf('viewersHotel',{n:hotel.viewers})}</div>
     </div>
   `;
   card.querySelector('.map-link').addEventListener('click', e=>e.stopPropagation());
