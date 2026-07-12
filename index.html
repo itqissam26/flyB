@@ -315,6 +315,22 @@
     content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     width:8px;height:8px;border-radius:50%;background:var(--primary);
   }
+  .duration .line.has-stop{background:var(--warning);}
+  .duration .line.has-stop::after{background:var(--warning);}
+
+  .best-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:var(--success);color:#fff;font-size:10px;font-weight:800;
+    padding:2px 8px;border-radius:var(--pill);margin-inline-start:6px;vertical-align:middle;
+  }
+  .best-badge .icon{width:11px;height:11px;}
+
+  .results-info{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
+    margin:2px 0 12px;font-size:13px;font-weight:700;color:var(--muted);
+  }
+  .results-info span{display:inline-flex;align-items:center;gap:6px;}
+  .results-info .icon{width:16px;height:16px;color:var(--primary);}
 
   .price-block{text-align:left;min-width:120px;}
   .price{font-size:21px;font-weight:900;color:var(--primary-dark);}
@@ -599,6 +615,37 @@
           <input type="date" id="returnDate">
         </div>
       </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="adultsCount">المسافرون (بالغون)</label>
+          <select id="adultsCount">
+            <option value="1" selected>بالغ واحد</option>
+            <option value="2">بالغان</option>
+            <option value="3">3 بالغين</option>
+            <option value="4">4 بالغين</option>
+            <option value="5">5 بالغين</option>
+            <option value="6">6 بالغين</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="childrenCount">الأطفال</label>
+          <select id="childrenCount">
+            <option value="0" selected>بدون أطفال</option>
+            <option value="1">طفل واحد</option>
+            <option value="2">طفلان</option>
+            <option value="3">3 أطفال</option>
+            <option value="4">4 أطفال</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cabinClass">درجة المقصورة</label>
+          <select id="cabinClass">
+            <option value="economy" selected>الاقتصادية</option>
+            <option value="business">رجال الأعمال</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div id="hotelForm" style="display:none">
@@ -764,8 +811,14 @@ const toSel = document.getElementById('toCity');
 const departInput = document.getElementById('departDate');
 const returnInput = document.getElementById('returnDate');
 const returnField = returnInput.closest('.field');
+const adultsSel = document.getElementById('adultsCount');
+const childrenSel = document.getElementById('childrenCount');
+const cabinSel = document.getElementById('cabinClass');
 const errorMsg = document.getElementById('errorMsg');
 const resultsArea = document.getElementById('resultsArea');
+
+const CABIN_FACTOR = { economy:1, business:2.6 };
+const CABIN_LABEL = { economy:'الاقتصادية', business:'رجال الأعمال' };
 
 function fillSelect(sel, defaultCode){
   cities.forEach(c=>{
@@ -934,6 +987,15 @@ function formatTime(hour, min){
 
 const DURATION_RANGES = { short:[60,150], medium:[150,330], long:[360,900] };
 
+const LAYOVER_HUBS = ["DXB","DOH","IST","AUH","FRA"];
+
+function timeOfDayOf(hour){
+  if(hour < 12) return 'morning';
+  if(hour < 17) return 'noon';
+  if(hour < 21) return 'evening';
+  return 'night';
+}
+
 function generateFlights(fromCode, toCode, dateStr){
   const rand = seededRandom(fromCode + toCode + dateStr);
   const base = basePriceForRoute(fromCode, toCode);
@@ -946,20 +1008,38 @@ function generateFlights(fromCode, toCode, dateStr){
     for(let i=0;i<numFlights;i++){
       const depHour = 5 + Math.floor(rand()*17);
       const depMin = Math.floor(rand()*4)*15;
-      const durationMin = durMin + Math.floor(rand()*(durMax - durMin));
+      let durationMin = durMin + Math.floor(rand()*(durMax - durMin));
+
+      // Stops: long-haul often has 1 stop, medium occasionally, short never
+      let stops = 0;
+      if(tier === 'long') stops = rand() < 0.55 ? 1 : 0;
+      else if(tier === 'medium') stops = rand() < 0.2 ? 1 : 0;
+      let stopCity = null;
+      if(stops === 1){
+        const hubs = LAYOVER_HUBS.filter(h=>h!==fromCode && h!==toCode);
+        stopCity = hubs[Math.floor(rand()*hubs.length)];
+        durationMin += 70 + Math.floor(rand()*160); // layover + extra leg
+      }
+
       let arrHour = depHour + Math.floor(durationMin/60);
       let arrMin = depMin + (durationMin%60);
       if(arrMin >= 60){ arrMin -= 60; arrHour += 1; }
+
+      // direct flights carry a small convenience premium
       const priceVariation = 0.85 + rand()*0.5;
-      const price = Math.round(base * al.mult * priceVariation / 5) * 5;
+      let price = base * al.mult * priceVariation * (stops === 0 ? 1.08 : 0.9);
+      price = Math.round(price / 5) * 5;
       const seatsLeft = Math.floor(rand()*9) + 1;
       flights.push({
         airline: al,
         depTime: formatTime(depHour, depMin),
         arrTime: formatTime(arrHour % 24, arrMin),
         durationMin,
-        price,
-        seatsLeft
+        price,           // per-person, economy base
+        seatsLeft,
+        stops,
+        stopCity,
+        timeOfDay: timeOfDayOf(depHour)
       });
     }
   });
@@ -982,9 +1062,16 @@ const SORT_OPTIONS = [
 
 const state = {
   from:null, to:null, depart:null, ret:null, tripType:'roundtrip',
+  adults:1, children:0, cabin:'economy',
   outboundFlights:[], returnFlights:[], sort:'price',
-  airlineFilter: new Set(airlines.map(a=>a.code))
+  airlineFilter: new Set(airlines.map(a=>a.code)),
+  directOnly:false
 };
+
+// per-person price for the chosen cabin, and total across passengers
+function paxCount(){ return state.adults + state.children; }
+function farePerPerson(flight){ return Math.round(flight.price * CABIN_FACTOR[state.cabin] / 5) * 5; }
+function fareTotal(flight){ return farePerPerson(flight) * paxCount(); }
 
 function sortFlights(arr, criteria){
   const copy = arr.slice();
@@ -994,7 +1081,7 @@ function sortFlights(arr, criteria){
   return copy;
 }
 
-function renderFlightCard(flight, sectionKey){
+function renderFlightCard(flight, sectionKey, isCheapest){
   const durH = Math.floor(flight.durationMin/60);
   const durM = flight.durationMin % 60;
   const card = document.createElement('div');
@@ -1003,14 +1090,19 @@ function renderFlightCard(flight, sectionKey){
   const isSelected = (sectionKey === 'outbound' && flight === selectedOutbound) ||
                       (sectionKey === 'return' && flight === selectedReturn);
   if(isSelected) card.classList.add('selected');
+  const stopsText = flight.stops === 0
+    ? `${icon('i-plane')} رحلة مباشرة`
+    : `${icon('i-clock')} توقف واحد في ${cityName(flight.stopCity)}`;
+  const perPerson = farePerPerson(flight);
+  const perNote = paxCount() > 1 ? `<div class="c num">${perPerson} ر.س / للمسافر</div>` : '';
   card.innerHTML = `
     <div class="airline">
       <div class="airline-logo" title="${flight.airline.name}">
         <img src="${flight.airline.logo}" alt="${flight.airline.name}">
       </div>
       <div>
-        <div class="airline-name">${flight.airline.name}</div>
-        <div class="airline-sub">${icon('i-plane')} رحلة مباشرة</div>
+        <div class="airline-name">${flight.airline.name}${isCheapest ? ' <span class="best-badge">'+icon('i-tag')+' الأرخص</span>' : ''}</div>
+        <div class="airline-sub">${stopsText}</div>
       </div>
     </div>
     <div class="times">
@@ -1020,7 +1112,8 @@ function renderFlightCard(flight, sectionKey){
       </div>
       <div class="duration">
         <div class="num">${durH}س ${durM}د</div>
-        <div class="line"></div>
+        <div class="line ${flight.stops ? 'has-stop' : ''}"></div>
+        <div class="c">${flight.stops === 0 ? 'مباشرة' : 'توقف 1'}</div>
       </div>
       <div class="time-block">
         <div class="t num">${flight.arrTime}</div>
@@ -1028,7 +1121,8 @@ function renderFlightCard(flight, sectionKey){
       </div>
     </div>
     <div class="price-block">
-      <div class="price"><span class="num">${flight.price}</span> <small>ر.س</small></div>
+      <div class="price"><span class="num">${fareTotal(flight)}</span> <small>ر.س</small></div>
+      ${perNote}
       <div class="seats" style="${flight.seatsLeft <= 4 ? '' : 'color:var(--success)'}">${flight.seatsLeft <= 4 ? icon('i-alert') + ' باقي ' + flight.seatsLeft + ' مقاعد فقط' : icon('i-check') + ' متوفر'}</div>
     </div>
   `;
@@ -1049,10 +1143,10 @@ function updateSummary(){
   let total = 0;
   let ready = false;
   if(type === 'oneway'){
-    if(selectedOutbound){ total = selectedOutbound.price; ready = true; }
+    if(selectedOutbound){ total = fareTotal(selectedOutbound); ready = true; }
   } else {
-    if(selectedOutbound) total += selectedOutbound.price;
-    if(selectedReturn) total += selectedReturn.price;
+    if(selectedOutbound) total += fareTotal(selectedOutbound);
+    if(selectedReturn) total += fareTotal(selectedReturn);
     ready = selectedOutbound && selectedReturn;
   }
   bar.querySelector('.total span').textContent = total ? total + ' ر.س' : '—';
@@ -1082,8 +1176,12 @@ function runSearch(){
   state.depart = depart;
   state.ret = ret;
   state.tripType = type;
+  state.adults = Number(adultsSel.value);
+  state.children = Number(childrenSel.value);
+  state.cabin = cabinSel.value;
   state.sort = 'price';
   state.airlineFilter = new Set(airlines.map(a=>a.code));
+  state.directOnly = false;
   state.outboundFlights = generateFlights(from, to, depart);
   state.returnFlights = type === 'roundtrip' ? generateFlights(to, from, ret) : [];
 
@@ -1094,7 +1192,13 @@ function runSearch(){
 }
 
 function visibleFlights(arr){
-  return sortFlights(arr.filter(f=>state.airlineFilter.has(f.airline.code)), state.sort);
+  let list = arr.filter(f=>state.airlineFilter.has(f.airline.code));
+  if(state.directOnly) list = list.filter(f=>f.stops === 0);
+  return sortFlights(list, state.sort);
+}
+
+function cheapestOf(list){
+  return list.reduce((m,f)=> (m===null || f.price < m.price) ? f : m, null);
 }
 
 function appendNoMatchNote(container){
@@ -1112,6 +1216,18 @@ function renderResults(){
     state.returnFlights.some(f=>f.airline.code===al.code)
   );
 
+  const outboundVisible = visibleFlights(state.outboundFlights);
+  const returnVisible = state.tripType === 'roundtrip' ? visibleFlights(state.returnFlights) : [];
+  const resultsCount = outboundVisible.length + returnVisible.length;
+
+  const info = document.createElement('div');
+  info.className = 'results-info';
+  info.innerHTML = `
+    <span>${icon('i-users')} ${paxCount()} مسافر · ${CABIN_LABEL[state.cabin]}</span>
+    <span>${icon('i-plane')} <span class="num">${resultsCount}</span> رحلة متاحة</span>
+  `;
+  resultsArea.appendChild(info);
+
   const filterBar = document.createElement('div');
   filterBar.className = 'filter-bar';
   filterBar.innerHTML = `
@@ -1120,6 +1236,10 @@ function renderResults(){
       ${availableAirlines.map(al=>
         `<button type="button" class="chip airline-chip ${state.airlineFilter.has(al.code)?'active':''}" data-code="${al.code}">${al.name}</button>`
       ).join('')}
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">${icon('i-clock')} التوقفات:</span>
+      <button type="button" class="chip direct-chip ${state.directOnly?'active':''}">${icon('i-plane')} مباشرة فقط</button>
     </div>
     <div class="filter-group">
       <span class="filter-label">${icon('i-filter')} الترتيب:</span>
@@ -1136,6 +1256,10 @@ function renderResults(){
       renderResults();
     });
   });
+  filterBar.querySelector('.direct-chip').addEventListener('click', ()=>{
+    state.directOnly = !state.directOnly;
+    renderResults();
+  });
   filterBar.querySelectorAll('.sort-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       state.sort = btn.dataset.sort;
@@ -1144,18 +1268,18 @@ function renderResults(){
   });
   resultsArea.appendChild(filterBar);
 
-  const outboundVisible = visibleFlights(state.outboundFlights);
+  const cheapestOut = cheapestOf(outboundVisible);
   const outSection = document.createElement('div');
   outSection.innerHTML = `<div class="section-title">${icon('i-plane')} رحلة الذهاب: ${cityName(state.from)} ${icon('i-arrow')} ${cityName(state.to)} <span class="badge">${formatArabicDate(state.depart)}</span></div>`;
-  if(outboundVisible.length) outboundVisible.forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound')));
+  if(outboundVisible.length) outboundVisible.forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound', f===cheapestOut)));
   else appendNoMatchNote(outSection);
   resultsArea.appendChild(outSection);
 
   if(state.tripType === 'roundtrip'){
-    const returnVisible = visibleFlights(state.returnFlights);
+    const cheapestRet = cheapestOf(returnVisible);
     const retSection = document.createElement('div');
     retSection.innerHTML = `<div class="section-title">${icon('i-plane')} رحلة العودة: ${cityName(state.to)} ${icon('i-arrow')} ${cityName(state.from)} <span class="badge">${formatArabicDate(state.ret)}</span></div>`;
-    if(returnVisible.length) returnVisible.forEach(f=>retSection.appendChild(renderFlightCard(f, 'return')));
+    if(returnVisible.length) returnVisible.forEach(f=>retSection.appendChild(renderFlightCard(f, 'return', f===cheapestRet)));
     else appendNoMatchNote(retSection);
     resultsArea.appendChild(retSection);
   }
