@@ -1062,12 +1062,12 @@ const CABIN_FACTOR = { economy:1, business:2.6 };
 const CABIN_LABEL = { economy:{ar:'الاقتصادية', en:'Economy'}, business:{ar:'رجال الأعمال', en:'Business'} };
 
 // ===== Live data layer =====
-// Talks to server/index.js (Amadeus proxy). If the backend isn't running, or
-// isn't configured with API keys yet, or the request errors/times out, every
-// function here resolves to null and the caller falls back to the built-in
-// demo generator — the site keeps working either way.
+// Talks to server/index.js (Duffel proxy). If the backend isn't running, or
+// isn't configured with an API token yet, or the request errors/times out,
+// every function here resolves to null and the caller falls back to the
+// built-in demo generator — the site keeps working either way.
 const API_BASE = 'http://localhost:8787';
-const LIVE_FETCH_TIMEOUT_MS = 6000;
+const LIVE_FETCH_TIMEOUT_MS = 8000;
 
 async function fetchJsonWithTimeout(url, ms){
   const ctrl = new AbortController();
@@ -1085,40 +1085,50 @@ async function fetchJsonWithTimeout(url, ms){
 
 function airlineByCode(code){
   return airlines.find(a=>a.code===code) || {
-    code, name: code, color:'#6b7280', mult:1, hauls:['short','medium','long'], logo:''
+    code, name: code || '—', color:'#6b7280', mult:1, hauls:['short','medium','long'], logo:''
   };
 }
 
-function parseAmadeusDurationToMin(iso){
+function parseIsoDurationToMin(iso){
   const m = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(iso || '');
   const h = m && m[1] ? parseInt(m[1],10) : 0;
   const mnt = m && m[2] ? parseInt(m[2],10) : 0;
   return h*60 + mnt;
 }
 
-// One Amadeus "flight-offer" (round trip) has itineraries[0]=outbound, [1]=return.
-// We split it into our separate outbound/return shape; the full price is kept on
-// the outbound leg so totals aren't double-counted when both are selected.
-function amadeusItineraryToFlight(itin, priceForThisLeg){
+// Best-effort conversion of a foreign-currency amount into our SAR baseline,
+// using the same static rates as the currency switcher. Unknown currencies
+// are passed through as-is rather than crashing.
+function toSarApprox(amount, currency){
+  const c = CURRENCIES[currency];
+  return c ? amount / c.rate : amount;
+}
+
+// A Duffel flight "offer" has slices[0]=outbound, slices[1]=return (round trip).
+// We split it into our separate outbound/return shape; the full price is kept
+// on the outbound leg so totals aren't double-counted when both are selected.
+function duffelSliceToFlight(slice, priceForThisLegSar){
   try {
-    const segs = itin.segments;
+    const segs = slice.segments;
     const first = segs[0];
     const last = segs[segs.length-1];
-    const depDate = new Date(first.departure.at);
-    const arrDate = new Date(last.arrival.at);
+    const depDate = new Date(first.departing_at);
+    const arrDate = new Date(last.arriving_at);
     const stops = segs.length - 1;
     const pad = n => String(n).padStart(2,'0');
+    const carrier = first.marketing_carrier || first.operating_carrier || {};
+    const durationMin = parseIsoDurationToMin(slice.duration || first.duration);
     return {
-      airline: airlineByCode(first.carrierCode),
+      airline: airlineByCode(carrier.iata_code),
       depTime: `${pad(depDate.getHours())}:${pad(depDate.getMinutes())}`,
       arrTime: `${pad(arrDate.getHours())}:${pad(arrDate.getMinutes())}`,
-      durationMin: parseAmadeusDurationToMin(itin.duration),
-      price: priceForThisLeg,
-      originalPrice: priceForThisLeg, discountPercent: 0,
+      durationMin,
+      price: priceForThisLegSar,
+      originalPrice: priceForThisLegSar, discountPercent: 0,
       seatsLeft: 9, viewers: 5 + Math.floor(Math.random()*30),
       stops,
-      stopCity: stops > 0 ? first.arrival.iataCode : null,
-      layoverMin: stops > 0 ? Math.max(0, parseAmadeusDurationToMin(itin.duration) - 120) : 0,
+      stopCity: stops > 0 ? (first.destination && first.destination.iata_code) : null,
+      layoverMin: stops > 0 ? Math.max(0, durationMin - 120) : 0,
       timeOfDay: timeOfDayOf(depDate.getHours())
     };
   } catch(e){ return null; }
@@ -1129,17 +1139,18 @@ async function fetchLiveFlights(from, to, date, ret, adults){
   const url = `${API_BASE}/api/flights/search?origin=${from}&destination=${to}&date=${date}`
     + (ret ? `&returnDate=${ret}` : '') + `&adults=${adults || 1}`;
   const data = await fetchJsonWithTimeout(url, LIVE_FETCH_TIMEOUT_MS);
-  if(!data || !Array.isArray(data.data) || !data.data.length) return null;
+  const offers = data && data.data && Array.isArray(data.data.offers) ? data.data.offers : null;
+  if(!offers || !offers.length) return null;
 
   const outbound = [];
   const back = [];
-  data.data.forEach(offer=>{
-    const total = Math.round(parseFloat(offer.price && offer.price.total));
-    if(!offer.itineraries || !offer.itineraries.length || isNaN(total)) return;
-    const out = amadeusItineraryToFlight(offer.itineraries[0], total);
+  offers.forEach(offer=>{
+    const total = Math.round(toSarApprox(parseFloat(offer.total_amount), offer.total_currency));
+    if(!offer.slices || !offer.slices.length || isNaN(total)) return;
+    const out = duffelSliceToFlight(offer.slices[0], total);
     if(out) outbound.push(out);
-    if(ret && offer.itineraries[1]){
-      const back1 = amadeusItineraryToFlight(offer.itineraries[1], 0);
+    if(ret && offer.slices[1]){
+      const back1 = duffelSliceToFlight(offer.slices[1], 0);
       if(back1) back.push(back1);
     }
   });
@@ -1151,25 +1162,28 @@ async function fetchLiveFlights(from, to, date, ret, adults){
 async function fetchLiveHotels(cityCode, checkIn, checkOut, adults){
   const url = `${API_BASE}/api/hotels/search?cityCode=${cityCode}&checkIn=${checkIn}&checkOut=${checkOut}&adults=${adults || 1}`;
   const data = await fetchJsonWithTimeout(url, LIVE_FETCH_TIMEOUT_MS);
-  if(!data || !Array.isArray(data.data) || !data.data.length) return null;
+  const results = data && data.data && Array.isArray(data.data.results) ? data.data.results : null;
+  if(!results || !results.length) return null;
 
   const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
-  const hotels = data.data.map(entry=>{
+  const hotels = results.map(r=>{
     try {
-      const hotel = entry.hotel;
-      const offer = entry.offers && entry.offers[0];
-      if(!offer) return null;
-      const total = parseFloat(offer.price.total);
-      const pricePerNight = Math.round(total / nights);
+      const acc = r.accommodation;
+      const totalSar = toSarApprox(parseFloat(r.cheapest_rate_total_amount), r.cheapest_rate_currency);
+      if(!acc || isNaN(totalSar)) return null;
+      const cityName = acc.location && acc.location.address && acc.location.address.city_name;
       return {
-        nameKey: null, liveName: hotel.name, cityCode,
-        stars: hotel.rating ? Math.round(Number(hotel.rating)) : 4,
-        pricePerNight, originalPricePerNight: pricePerNight, discountPercent: 0,
+        nameKey: null, liveName: acc.name, cityCode,
+        stars: acc.rating || 4,
+        pricePerNight: Math.round(totalSar / nights),
+        originalPricePerNight: Math.round(totalSar / nights), discountPercent: 0,
         roomsLeft: 9, viewers: 4 + Math.floor(Math.random()*40),
-        image: HOTEL_IMAGES[Math.floor(Math.random()*HOTEL_IMAGES.length)],
-        locKey: 'locDowntown', neighborhood: null,
+        image: (acc.photos && acc.photos[0] && acc.photos[0].url) || HOTEL_IMAGES[Math.floor(Math.random()*HOTEL_IMAGES.length)],
+        locKey: cityName ? null : 'locDowntown',
+        neighborhood: cityName ? { ar: cityName, en: cityName } : null,
         amenityKeys: AMENITY_KEYS.slice(0,3),
-        rating: 7.5, reviews: 200
+        rating: acc.review_score || 7.5,
+        reviews: acc.review_count || 0
       };
     } catch(e){ return null; }
   }).filter(Boolean);
@@ -1655,7 +1669,7 @@ const state = {
   outboundFlights:[], returnFlights:[], sort:'price',
   airlineFilter: new Set(airlines.map(a=>a.code)),
   directOnly:false, timeFilter:'all', maxPrice:null,
-  dataSource:'demo' // 'live' once a real Amadeus response is used
+  dataSource:'demo' // 'live' once a real Duffel response is used
 };
 
 const TIME_OF_DAY = [
@@ -1799,7 +1813,7 @@ async function runSearch(){
   renderSkeleton(type === 'roundtrip' ? 5 : 3);
   resultsArea.scrollIntoView({behavior:'smooth', block:'start'});
 
-  // try the live backend first (Amadeus proxy); fall back to demo data
+  // try the live backend first (Duffel proxy); fall back to demo data
   const live = await fetchLiveFlights(from, to, depart, type === 'roundtrip' ? ret : null, state.adults);
   if(live){
     state.dataSource = 'live';
