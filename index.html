@@ -477,6 +477,8 @@
   .summary-bar .total{font-size:18px;font-weight:900;}
   .summary-bar .total span{color:var(--primary-dark);}
   [data-theme="dark"] .summary-bar .total span{color:var(--primary);}
+  .summary-bar-inner{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  .redirect-note{font-size:11px;color:var(--muted);}
   .confirm-btn{
     background:var(--primary);color:#fff;border:none;
     min-height:46px;padding:12px 26px;border-radius:var(--radius-sm);
@@ -1277,6 +1279,7 @@ const T = {
     direct:"رحلة مباشرة", directShort:"مباشرة", stopIn:"توقف واحد في", stop1:"توقف 1",
     depart:"مغادرة", arrive:"وصول", seatsLeft:"مقاعد فقط", seatsLeftPre:"باقي", available:"متوفر",
     perTraveler:"للمسافر", cheapest:"الأرخص", total:"الإجمالي:", continueBooking:"متابعة الحجز",
+    redirectNote:"سيتم تحويلك لموقع خارجي لإكمال الحجز الفعلي",
     savedPct:"وفّرت {pct}%", viewersFlight:"{n} يشوفون هذه الرحلة الآن", viewersHotel:"{n} يشاهدون هذا الفندق الآن",
     seatsAtPrice:"باقي {n} مقاعد بهذا السعر", roomsAtPrice:"باقي {n} غرف بهذا السعر", demoTag:"عرض تجريبي",
     airline:"شركة الطيران:", stopsLabel:"التوقفات:", directOnly:"مباشرة فقط",
@@ -1334,6 +1337,7 @@ const T = {
     direct:"Direct flight", directShort:"Direct", stopIn:"1 stop in", stop1:"1 stop",
     depart:"Depart", arrive:"Arrive", seatsLeft:"seats left", seatsLeftPre:"Only", available:"Available",
     perTraveler:"per traveler", cheapest:"Cheapest", total:"Total:", continueBooking:"Continue booking",
+    redirectNote:"You'll be redirected to an external site to complete the actual booking",
     savedPct:"Save {pct}%", viewersFlight:"{n} people viewing this flight now", viewersHotel:"{n} people viewing this hotel now",
     seatsAtPrice:"Only {n} seats left at this price", roomsAtPrice:"Only {n} rooms left at this price", demoTag:"Demo offer",
     airline:"Airline:", stopsLabel:"Stops:", directOnly:"Direct only",
@@ -2027,8 +2031,11 @@ function renderResults(){
   summaryBar.id = 'summaryBar';
   summaryBar.innerHTML = `
     <div class="total">${t('total')} <span class="num">—</span></div>
-    <button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button>
+    <div class="summary-bar-inner"><button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button><span class="redirect-note">${t('redirectNote')}</span></div>
   `;
+  summaryBar.querySelector('.confirm-btn').addEventListener('click', ()=>{
+    window.open(buildGoogleFlightsUrl(), '_blank', 'noopener');
+  });
   main.appendChild(summaryBar);
 
   shell.appendChild(main);
@@ -2041,6 +2048,21 @@ function formatArabicDate(dateStr){
   const days = T[lang].days;
   const months = T[lang].months;
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+// ----- Redirect-to-book: send the user to a real external search to finish
+// their booking, since FlyB itself doesn't issue tickets or take payment. -----
+function buildGoogleFlightsUrl(){
+  const originCity = cityName(state.from);
+  const destCity = cityName(state.to);
+  let q = `Flights from ${originCity} to ${destCity} on ${state.depart}`;
+  if(state.tripType === 'roundtrip' && state.ret) q += ` returning ${state.ret}`;
+  return 'https://www.google.com/travel/flights?q=' + encodeURIComponent(q);
+}
+function buildGoogleHotelsUrl(){
+  const city = cityName(hotelState.city);
+  const q = `Hotels in ${city} check in ${hotelState.checkIn} check out ${hotelState.checkOut}`;
+  return 'https://www.google.com/travel/hotels?q=' + encodeURIComponent(q);
 }
 
 const HOTEL_IMAGES = [
@@ -2304,8 +2326,11 @@ function renderHotelResults(){
   summaryBar.id = 'hotelSummaryBar';
   summaryBar.innerHTML = `
     <div class="total">${t('total')} <span class="num">—</span></div>
-    <button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button>
+    <div class="summary-bar-inner"><button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button><span class="redirect-note">${t('redirectNote')}</span></div>
   `;
+  summaryBar.querySelector('.confirm-btn').addEventListener('click', ()=>{
+    window.open(buildGoogleHotelsUrl(), '_blank', 'noopener');
+  });
   main.appendChild(summaryBar);
 
   shell.appendChild(main);
