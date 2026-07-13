@@ -1,0 +1,16 @@
+{
+  "name": "flyb-server",
+  "version": "1.0.0",
+  "description": "Backend proxy for FlyB - keeps the Amadeus API key secret and forwards search requests.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
