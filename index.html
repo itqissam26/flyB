@@ -489,15 +489,52 @@
   }
   .empty-note .icon{width:34px;height:34px;color:var(--primary);opacity:.8;}
 
-  /* ===== Filters / sort ===== */
-  .filter-bar{
-    display:flex;flex-wrap:wrap;gap:16px;
-    margin:4px 0 18px;padding:14px;
+  /* ===== Filters sidebar + results toolbar ===== */
+  .results-shell{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
+  .filters-sidebar{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;display:flex;flex-direction:column;gap:16px;
+    position:sticky;top:76px;
   }
-  .filter-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .filter-label{font-size:13px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:5px;}
-  .filter-label .icon{width:15px;height:15px;}
+  .filters-sidebar-title{
+    font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px;
+    margin:0;padding-bottom:12px;border-bottom:1px solid var(--border);
+  }
+  .filters-sidebar-title .icon{width:16px;height:16px;color:var(--primary);}
+  .filter-section{padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .filter-section:last-child{border-bottom:none;padding-bottom:0;}
+  .filter-section h4{
+    margin:0 0 8px;font-size:12.5px;font-weight:800;color:var(--text);
+    display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.02em;
+  }
+  .filter-section h4 .icon{width:14px;height:14px;color:var(--primary);}
+  .filter-option{
+    display:flex;align-items:center;gap:8px;padding:6px 2px;
+    font-size:13.5px;color:var(--text);cursor:pointer;user-select:none;
+  }
+  .filter-option input{width:17px;height:17px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;margin:0;min-height:auto;}
+  .filter-option .fo-icon{display:flex;color:var(--muted);}
+  .filter-option .fo-icon .icon{width:14px;height:14px;}
+  .filter-option-count{margin-inline-start:auto;font-size:11.5px;color:var(--muted);}
+  .filter-section .range-filter{flex-direction:column;align-items:stretch;gap:8px;}
+  .filter-section .range-filter input[type=range]{width:100%;}
+
+  .results-toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-bottom:14px;flex-wrap:wrap;
+  }
+  .sort-select-wrap{display:flex;align-items:center;gap:8px;}
+  .sort-select-wrap label{font-size:12.5px;font-weight:800;color:var(--muted);}
+  .sort-select-wrap select{
+    border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    padding:8px 30px 8px 10px;font-family:inherit;font-weight:700;font-size:13px;
+    background:var(--surface);color:var(--text);min-height:auto;cursor:pointer;
+  }
+  @media (max-width:900px){
+    .results-shell{grid-template-columns:1fr;}
+    .filters-sidebar{position:static;}
+  }
+
   .chip{
     display:inline-flex;align-items:center;gap:6px;
     min-height:38px;padding:8px 14px;border-radius:var(--pill);
@@ -1114,6 +1151,7 @@ const T = {
     popularTitle:"الوجهات الأكثر بحثًا", fromPrice:"ابتداءً من",
     hotelsIn:"الفنادق في", night:"ليلة", nights:"ليالٍ",
     starRating:"تصنيف الفندق:", priceNightUpTo:"السعر/ليلة حتى:", reviews:"تقييم",
+    neighborhoods:"الأحياء المشهورة", filtersTitle:"الفلاتر", sortBy:"ترتيب حسب:", resultsFound:"نتيجة",
     mapLink:"الموقع على الخريطة", perNight:"/ليلة",
     amWifi:"واي فاي مجاني", amBreakfast:"إفطار مجاني", amPool:"مسبح", amParking:"موقف سيارات مجاني",
     amGym:"صالة رياضية", amSpa:"سبا", amCancel:"إلغاء مجاني",
@@ -1169,6 +1207,7 @@ const T = {
     popularTitle:"Most searched destinations", fromPrice:"From",
     hotelsIn:"Hotels in", night:"night", nights:"nights",
     starRating:"Hotel rating:", priceNightUpTo:"Price/night up to:", reviews:"reviews",
+    neighborhoods:"Popular neighborhoods", filtersTitle:"Filters", sortBy:"Sort by:", resultsFound:"results",
     mapLink:"View on map", perNight:"/night",
     amWifi:"Free Wi-Fi", amBreakfast:"Free breakfast", amPool:"Pool", amParking:"Free parking",
     amGym:"Gym", amSpa:"Spa", amCancel:"Free cancellation",
@@ -1731,71 +1770,95 @@ function renderResults(){
   `;
   resultsArea.appendChild(info);
 
-  const filterBar = document.createElement('div');
-  filterBar.className = 'filter-bar';
-  filterBar.innerHTML = `
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-plane')} ${t('airline')}</span>
-      ${availableAirlines.map(al=>
-        `<button type="button" class="chip airline-chip ${state.airlineFilter.has(al.code)?'active':''}" data-code="${al.code}">${al.name}</button>`
-      ).join('')}
+  const shell = document.createElement('div');
+  shell.className = 'results-shell';
+
+  // ----- Sidebar -----
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'filters-sidebar';
+  sidebar.innerHTML = `
+    <h3 class="filters-sidebar-title">${icon('i-filter')} ${t('filtersTitle')}</h3>
+    <div class="filter-section">
+      <h4>${icon('i-plane')} ${t('airline')}</h4>
+      ${availableAirlines.map(al=>`
+        <label class="filter-option">
+          <input type="checkbox" class="airline-check" data-code="${al.code}" ${state.airlineFilter.has(al.code)?'checked':''}>
+          ${al.name}
+        </label>
+      `).join('')}
     </div>
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-clock')} ${t('stopsLabel')}</span>
-      <button type="button" class="chip direct-chip ${state.directOnly?'active':''}">${icon('i-plane')} ${t('directOnly')}</button>
+    <div class="filter-section">
+      <h4>${icon('i-clock')} ${t('stopsLabel')}</h4>
+      <label class="filter-option">
+        <input type="checkbox" class="direct-check" ${state.directOnly?'checked':''}>
+        ${t('directOnly')}
+      </label>
     </div>
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-clock')} ${t('departTime')}</span>
-      ${TIME_OF_DAY.map(tod=>
-        `<button type="button" class="chip time-chip ${state.timeFilter===tod.key?'active':''}" data-time="${tod.key}">${icon(tod.icon)} ${t(tod.lk)}</button>`
-      ).join('')}
+    <div class="filter-section">
+      <h4>${icon('i-clock')} ${t('departTime')}</h4>
+      ${TIME_OF_DAY.map(tod=>`
+        <label class="filter-option">
+          <input type="radio" name="timeFilter" class="time-radio" value="${tod.key}" ${state.timeFilter===tod.key?'checked':''}>
+          <span class="fo-icon">${icon(tod.icon)}</span> ${t(tod.lk)}
+        </label>
+      `).join('')}
     </div>
-    <div class="filter-group range-filter">
-      <span class="filter-label">${icon('i-tag')} ${t('priceUpTo')}</span>
-      <input type="range" id="flightPriceRange" min="${fMin}" max="${fMax}" step="5" value="${state.maxPrice}">
-      <span class="range-val" id="flightPriceVal">${moneyPlain(state.maxPrice)}</span>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-filter')} ${t('sortLabel')}</span>
-      ${SORT_OPTIONS.map(o=>
-        `<button type="button" class="chip sort-chip ${state.sort===o.key?'active':''}" data-sort="${o.key}">${icon(o.icon)} ${t(o.lk)}</button>`
-      ).join('')}
+    <div class="filter-section">
+      <h4>${icon('i-tag')} ${t('priceUpTo')}</h4>
+      <div class="range-filter">
+        <input type="range" id="flightPriceRange" min="${fMin}" max="${fMax}" step="5" value="${state.maxPrice}">
+        <span class="range-val" id="flightPriceVal">${moneyPlain(state.maxPrice)}</span>
+      </div>
     </div>
   `;
-  const fRange = filterBar.querySelector('#flightPriceRange');
-  const fVal = filterBar.querySelector('#flightPriceVal');
+  const fRange = sidebar.querySelector('#flightPriceRange');
+  const fVal = sidebar.querySelector('#flightPriceVal');
   fRange.addEventListener('input', ()=>{ fVal.textContent = moneyPlain(Number(fRange.value)); });
   fRange.addEventListener('change', ()=>{ state.maxPrice = Number(fRange.value); renderResults(); });
-  filterBar.querySelectorAll('.time-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ state.timeFilter = btn.dataset.time; renderResults(); });
+  sidebar.querySelectorAll('.time-radio').forEach(el=>{
+    el.addEventListener('change', ()=>{ state.timeFilter = el.value; renderResults(); });
   });
-  filterBar.querySelectorAll('.airline-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const code = btn.dataset.code;
-      if(state.airlineFilter.has(code)) state.airlineFilter.delete(code);
-      else state.airlineFilter.add(code);
+  sidebar.querySelectorAll('.airline-check').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const code = el.dataset.code;
+      if(el.checked) state.airlineFilter.add(code); else state.airlineFilter.delete(code);
       renderResults();
     });
   });
-  filterBar.querySelector('.direct-chip').addEventListener('click', ()=>{
-    state.directOnly = !state.directOnly;
+  sidebar.querySelector('.direct-check').addEventListener('change', (e)=>{
+    state.directOnly = e.target.checked;
     renderResults();
   });
-  filterBar.querySelectorAll('.sort-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.sort = btn.dataset.sort;
-      renderResults();
-    });
+  shell.appendChild(sidebar);
+
+  // ----- Main results column -----
+  const main = document.createElement('div');
+  main.className = 'results-main';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'results-toolbar';
+  toolbar.innerHTML = `
+    <span></span>
+    <div class="sort-select-wrap">
+      <label for="flightSortSelect">${t('sortBy')}</label>
+      <select id="flightSortSelect">
+        ${SORT_OPTIONS.map(o=>`<option value="${o.key}" ${state.sort===o.key?'selected':''}>${t(o.lk)}</option>`).join('')}
+      </select>
+    </div>
+  `;
+  toolbar.querySelector('#flightSortSelect').addEventListener('change', (e)=>{
+    state.sort = e.target.value;
+    renderResults();
   });
-  resultsArea.appendChild(filterBar);
-  resultsArea.appendChild(buildPriceCalendar());
+  main.appendChild(toolbar);
+  main.appendChild(buildPriceCalendar());
 
   const cheapestOut = cheapestOf(outboundVisible);
   const outSection = document.createElement('div');
   outSection.innerHTML = `<div class="section-title">${icon('i-plane')} ${t('outbound')}: ${cityName(state.from)} ${icon('i-arrow')} ${cityName(state.to)} <span class="badge">${formatArabicDate(state.depart)}</span></div>`;
   if(outboundVisible.length) outboundVisible.forEach(f=>outSection.appendChild(renderFlightCard(f, 'outbound', f===cheapestOut)));
   else appendNoMatchNote(outSection);
-  resultsArea.appendChild(outSection);
+  main.appendChild(outSection);
 
   if(state.tripType === 'roundtrip'){
     const cheapestRet = cheapestOf(returnVisible);
@@ -1803,7 +1866,7 @@ function renderResults(){
     retSection.innerHTML = `<div class="section-title">${icon('i-plane')} ${t('inbound')}: ${cityName(state.to)} ${icon('i-arrow')} ${cityName(state.from)} <span class="badge">${formatArabicDate(state.ret)}</span></div>`;
     if(returnVisible.length) returnVisible.forEach(f=>retSection.appendChild(renderFlightCard(f, 'return', f===cheapestRet)));
     else appendNoMatchNote(retSection);
-    resultsArea.appendChild(retSection);
+    main.appendChild(retSection);
   }
 
   const summaryBar = document.createElement('div');
@@ -1813,7 +1876,10 @@ function renderResults(){
     <div class="total">${t('total')} <span class="num">—</span></div>
     <button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button>
   `;
-  resultsArea.appendChild(summaryBar);
+  main.appendChild(summaryBar);
+
+  shell.appendChild(main);
+  resultsArea.appendChild(shell);
   updateSummary();
 }
 
@@ -1839,6 +1905,38 @@ const AMENITY_ICONS = {
   amParking:"i-parking", amGym:"i-gym", amSpa:"i-spa", amCancel:"i-check",
 };
 
+// Real, well-known neighborhoods/districts per city — used instead of the
+// generic location phrases when available, and to power the neighborhood filter.
+const NEIGHBORHOODS = {
+  RUH:[{ar:"العليا",en:"Al Olaya"},{ar:"الملقا",en:"Al Malqa"},{ar:"حي السفارات",en:"Diplomatic Quarter"},{ar:"الدرعية",en:"Diriyah"}],
+  JED:[{ar:"الكورنيش",en:"Corniche"},{ar:"البلد",en:"Al Balad"},{ar:"الشاطئ",en:"Al Shati"}],
+  DMM:[{ar:"الكورنيش",en:"Corniche"},{ar:"الفيصلية",en:"Al Faisaliah"}],
+  MED:[{ar:"المنطقة المركزية",en:"Central Area"},{ar:"قباء",en:"Quba"}],
+  DXB:[{ar:"دبي مارينا",en:"Dubai Marina"},{ar:"وسط مدينة دبي",en:"Downtown Dubai"},{ar:"جميرا",en:"Jumeirah"},{ar:"ديرة",en:"Deira"}],
+  AUH:[{ar:"الكورنيش",en:"Corniche"},{ar:"جزيرة ياس",en:"Yas Island"},{ar:"جزيرة السعديات",en:"Saadiyat Island"}],
+  DOH:[{ar:"الكورنيش",en:"Corniche"},{ar:"ذا بيرل",en:"The Pearl"},{ar:"سوق واقف",en:"Souq Waqif"}],
+  KWI:[{ar:"السالمية",en:"Salmiya"},{ar:"شرق",en:"Sharq"}],
+  MCT:[{ar:"القرم",en:"Qurum"},{ar:"مطرح",en:"Muttrah"}],
+  CAI:[{ar:"وسط البلد",en:"Downtown"},{ar:"الزمالك",en:"Zamalek"},{ar:"المعادي",en:"Maadi"},{ar:"الجيزة",en:"Giza"}],
+  IST:[{ar:"السلطان أحمد",en:"Sultanahmet"},{ar:"تقسيم",en:"Taksim"},{ar:"بشكتاش",en:"Beşiktaş"},{ar:"قاضي كوي",en:"Kadıköy"}],
+  LHR:[{ar:"وستمنستر",en:"Westminster"},{ar:"كنسينغتون",en:"Kensington"},{ar:"شورديتش",en:"Shoreditch"},{ar:"كامدن",en:"Camden"}],
+  CDG:[{ar:"لو ماريه",en:"Le Marais"},{ar:"مونمارتر",en:"Montmartre"},{ar:"الشانزليزيه",en:"Champs-Élysées"}],
+  FRA:[{ar:"وسط المدينة",en:"City Centre"},{ar:"ساكسنهاوزن",en:"Sachsenhausen"}],
+  AMS:[{ar:"وسط المدينة",en:"City Centre"},{ar:"جوردان",en:"Jordaan"}],
+  FCO:[{ar:"وسط روما التاريخي",en:"Historic Centre"},{ar:"تراستيفيري",en:"Trastevere"}],
+  MAD:[{ar:"سالامانكا",en:"Salamanca"},{ar:"غران فيا",en:"Gran Vía"}],
+  BCN:[{ar:"الحي القوطي",en:"Gothic Quarter"},{ar:"إيشامپلا",en:"Eixample"}],
+  ICN:[{ar:"غانغنام",en:"Gangnam"},{ar:"ميونغدونغ",en:"Myeongdong"}],
+  HND:[{ar:"شينجوكو",en:"Shinjuku"},{ar:"شيبويا",en:"Shibuya"},{ar:"غينزا",en:"Ginza"}],
+  BKK:[{ar:"سوكومفيت",en:"Sukhumvit"},{ar:"سيام",en:"Siam"},{ar:"خاوسان",en:"Khao San"}],
+  KUL:[{ar:"كوالالمبور سيتي سنتر",en:"KLCC"},{ar:"بوكيت بينتانغ",en:"Bukit Bintang"}],
+  SIN:[{ar:"مارينا باي",en:"Marina Bay"},{ar:"أورشارد رود",en:"Orchard Road"}],
+  JFK:[{ar:"مانهاتن",en:"Manhattan"},{ar:"بروكلين",en:"Brooklyn"},{ar:"تايمز سكوير",en:"Times Square"}],
+  LAX:[{ar:"هوليوود",en:"Hollywood"},{ar:"سانتا مونيكا",en:"Santa Monica"}],
+  SYD:[{ar:"ذا روكس",en:"The Rocks"},{ar:"بوندي",en:"Bondi"}],
+};
+function neighborhoodKey(n){ return n.ar; }
+
 function cityRegionFactor(code){
   const a = airportByCode(code);
   return a ? (REGION_FACTOR[a.region] || 1) : 1;
@@ -1855,7 +1953,9 @@ function generateHotels(cityCode, checkIn, checkOut){
     const pricePerNight = Math.round(starBase * regionFactor / 5) * 5;
     const nameKey = HOTEL_NAME_KEYS[Math.floor(rand()*HOTEL_NAME_KEYS.length)];
     const image = HOTEL_IMAGES[Math.floor(rand()*HOTEL_IMAGES.length)];
-    const locKey = LOCATION_KEYS[Math.floor(rand()*LOCATION_KEYS.length)];
+    const nbList = NEIGHBORHOODS[cityCode];
+    const neighborhood = nbList ? nbList[Math.floor(rand()*nbList.length)] : null;
+    const locKey = neighborhood ? null : LOCATION_KEYS[Math.floor(rand()*LOCATION_KEYS.length)];
     const shuffledAmenities = AMENITY_KEYS.slice().sort(()=>rand()-0.5);
     const amenityKeys = shuffledAmenities.slice(0, 2 + Math.floor(rand()*3));
     const rating = Math.round((6 + rand()*3.5) * 10) / 10; // 6.0 - 9.5
@@ -1865,7 +1965,7 @@ function generateHotels(cityCode, checkIn, checkOut){
     const originalPricePerNight = hasDeal ? Math.round(pricePerNight / (1 - discountPercent/100) / 5) * 5 : pricePerNight;
     const roomsLeft = 1 + Math.floor(rand()*6); // 1-6
     const viewers = 4 + Math.floor(rand()*46);
-    hotels.push({ nameKey, cityCode, stars, pricePerNight, originalPricePerNight, discountPercent, roomsLeft, viewers, image, locKey, amenityKeys, rating, reviews });
+    hotels.push({ nameKey, cityCode, stars, pricePerNight, originalPricePerNight, discountPercent, roomsLeft, viewers, image, locKey, neighborhood, amenityKeys, rating, reviews });
   }
   return hotels;
 }
@@ -1884,7 +1984,8 @@ const HOTEL_SORT_OPTIONS = [
 
 const hotelState = {
   city:null, checkIn:null, checkOut:null, nights:0, rooms:1, guests:2,
-  hotels:[], sort:'price', starFilter:new Set([3,4,5]), maxPrice:null
+  hotels:[], sort:'price', starFilter:new Set([3,4,5]), maxPrice:null,
+  neighborhoodFilter:null // null = all; otherwise a Set of neighborhood.ar keys
 };
 
 let selectedHotel = null;
@@ -1895,7 +1996,7 @@ function renderHotelCard(hotel){
   if(hotel === selectedHotel) card.classList.add('selected');
   const total = hotel.pricePerNight * hotelState.nights * hotelState.rooms;
   const name = t(hotel.nameKey).replace('{city}', cityName(hotel.cityCode));
-  const location = t(hotel.locKey);
+  const location = hotel.neighborhood ? hotel.neighborhood[lang] : t(hotel.locKey);
   const starsHtml = Array.from({length:hotel.stars}, ()=>`<svg class="icon icon-fill"><use href="#i-star"/></svg>`).join('');
   const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(name + ' ' + cityName(hotelState.city));
   card.innerHTML = `
@@ -1938,59 +2039,110 @@ function renderHotelResults(){
     hotelState.maxPrice = priceMax;
   }
 
-  const filterBar = document.createElement('div');
-  filterBar.className = 'filter-bar';
-  filterBar.innerHTML = `
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-star')} ${t('starRating')}</span>
-      ${[3,4,5].map(s=>
-        `<button type="button" class="chip star-chip ${hotelState.starFilter.has(s)?'active':''}" data-star="${s}">${s} ${icon('i-star')}</button>`
-      ).join('')}
+  const availableNeighborhoods = [];
+  const seenNb = new Set();
+  hotelState.hotels.forEach(h=>{
+    if(h.neighborhood && !seenNb.has(neighborhoodKey(h.neighborhood))){
+      seenNb.add(neighborhoodKey(h.neighborhood));
+      availableNeighborhoods.push(h.neighborhood);
+    }
+  });
+  if(hotelState.neighborhoodFilter === null){
+    hotelState.neighborhoodFilter = new Set(availableNeighborhoods.map(neighborhoodKey));
+  }
+
+  const shell = document.createElement('div');
+  shell.className = 'results-shell';
+
+  // ----- Sidebar -----
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'filters-sidebar';
+  sidebar.innerHTML = `
+    <h3 class="filters-sidebar-title">${icon('i-filter')} ${t('filtersTitle')}</h3>
+    <div class="filter-section">
+      <h4>${icon('i-star')} ${t('starRating')}</h4>
+      ${[5,4,3].map(s=>`
+        <label class="filter-option">
+          <input type="checkbox" class="star-check" data-star="${s}" ${hotelState.starFilter.has(s)?'checked':''}>
+          ${s} ${icon('i-star')}
+        </label>
+      `).join('')}
     </div>
-    <div class="filter-group range-filter">
-      <span class="filter-label">${icon('i-tag')} ${t('priceNightUpTo')}</span>
-      <input type="range" id="hotelPriceRange" min="${priceMin}" max="${priceMax}" step="5" value="${hotelState.maxPrice}">
-      <span class="range-val" id="hotelPriceVal">${moneyPlain(hotelState.maxPrice)}</span>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">${icon('i-filter')} ${t('sortLabel')}</span>
-      ${HOTEL_SORT_OPTIONS.map(o=>
-        `<button type="button" class="chip hsort-chip ${hotelState.sort===o.key?'active':''}" data-sort="${o.key}">${icon(o.icon)} ${t(o.lk)}</button>`
-      ).join('')}
+    ${availableNeighborhoods.length ? `
+    <div class="filter-section">
+      <h4>${icon('i-pin')} ${t('neighborhoods')}</h4>
+      ${availableNeighborhoods.map(n=>`
+        <label class="filter-option">
+          <input type="checkbox" class="nb-check" data-nb="${neighborhoodKey(n)}" ${hotelState.neighborhoodFilter.has(neighborhoodKey(n))?'checked':''}>
+          ${n[lang]}
+        </label>
+      `).join('')}
+    </div>` : ''}
+    <div class="filter-section">
+      <h4>${icon('i-tag')} ${t('priceNightUpTo')}</h4>
+      <div class="range-filter">
+        <input type="range" id="hotelPriceRange" min="${priceMin}" max="${priceMax}" step="5" value="${hotelState.maxPrice}">
+        <span class="range-val" id="hotelPriceVal">${moneyPlain(hotelState.maxPrice)}</span>
+      </div>
     </div>
   `;
-  const priceRange = filterBar.querySelector('#hotelPriceRange');
-  const priceVal = filterBar.querySelector('#hotelPriceVal');
+  const priceRange = sidebar.querySelector('#hotelPriceRange');
+  const priceVal = sidebar.querySelector('#hotelPriceVal');
   priceRange.addEventListener('input', ()=>{ priceVal.textContent = moneyPlain(Number(priceRange.value)); });
   priceRange.addEventListener('change', ()=>{ hotelState.maxPrice = Number(priceRange.value); renderHotelResults(); });
-  filterBar.querySelectorAll('.star-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const s = Number(btn.dataset.star);
-      if(hotelState.starFilter.has(s)) hotelState.starFilter.delete(s);
-      else hotelState.starFilter.add(s);
+  sidebar.querySelectorAll('.star-check').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const s = Number(el.dataset.star);
+      if(el.checked) hotelState.starFilter.add(s); else hotelState.starFilter.delete(s);
       renderHotelResults();
     });
   });
-  filterBar.querySelectorAll('.hsort-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      hotelState.sort = btn.dataset.sort;
+  sidebar.querySelectorAll('.nb-check').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const key = el.dataset.nb;
+      if(el.checked) hotelState.neighborhoodFilter.add(key); else hotelState.neighborhoodFilter.delete(key);
       renderHotelResults();
     });
   });
-  resultsArea.appendChild(filterBar);
+  shell.appendChild(sidebar);
+
+  // ----- Main results column -----
+  const main = document.createElement('div');
+  main.className = 'results-main';
 
   const title = document.createElement('div');
   title.className = 'section-title';
   title.innerHTML = `${icon('i-bed')} ${t('hotelsIn')} ${cityName(hotelState.city)} <span class="badge">${formatArabicDate(hotelState.checkIn)} ${icon('i-arrow')} ${formatArabicDate(hotelState.checkOut)} (${hotelState.nights} ${hotelState.nights===1?t('night'):t('nights')})</span>`;
-  resultsArea.appendChild(title);
+  main.appendChild(title);
 
-  const visible = sortHotels(hotelState.hotels.filter(h=>hotelState.starFilter.has(h.stars) && h.pricePerNight <= hotelState.maxPrice), hotelState.sort);
+  const toolbar = document.createElement('div');
+  toolbar.className = 'results-toolbar';
+  toolbar.innerHTML = `
+    <span></span>
+    <div class="sort-select-wrap">
+      <label for="hotelSortSelect">${t('sortBy')}</label>
+      <select id="hotelSortSelect">
+        ${HOTEL_SORT_OPTIONS.map(o=>`<option value="${o.key}" ${hotelState.sort===o.key?'selected':''}>${t(o.lk)}</option>`).join('')}
+      </select>
+    </div>
+  `;
+  toolbar.querySelector('#hotelSortSelect').addEventListener('change', (e)=>{
+    hotelState.sort = e.target.value;
+    renderHotelResults();
+  });
+  main.appendChild(toolbar);
+
+  const visible = sortHotels(hotelState.hotels.filter(h=>
+    hotelState.starFilter.has(h.stars) &&
+    h.pricePerNight <= hotelState.maxPrice &&
+    (!h.neighborhood || hotelState.neighborhoodFilter.has(neighborhoodKey(h.neighborhood)))
+  ), hotelState.sort);
   if(visible.length){
-    visible.forEach(h=>resultsArea.appendChild(renderHotelCard(h)));
+    visible.forEach(h=>main.appendChild(renderHotelCard(h)));
   } else {
     const note = document.createElement('div');
     note.innerHTML = emptyNote('i-filter', t('noMatchHotels'));
-    resultsArea.appendChild(note);
+    main.appendChild(note);
   }
 
   const summaryBar = document.createElement('div');
@@ -2000,7 +2152,10 @@ function renderHotelResults(){
     <div class="total">${t('total')} <span class="num">—</span></div>
     <button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button>
   `;
-  resultsArea.appendChild(summaryBar);
+  main.appendChild(summaryBar);
+
+  shell.appendChild(main);
+  resultsArea.appendChild(shell);
 }
 
 function runHotelSearch(){
@@ -2025,6 +2180,7 @@ function runHotelSearch(){
   hotelState.sort = 'price';
   hotelState.starFilter = new Set([3,4,5]);
   hotelState.maxPrice = null;
+  hotelState.neighborhoodFilter = null;
   hotelState.hotels = generateHotels(city, checkIn, checkOut);
 
   renderSkeleton(4);
