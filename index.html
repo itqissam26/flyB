@@ -479,6 +479,100 @@
   [data-theme="dark"] .summary-bar .total span{color:var(--primary);}
   .summary-bar-inner{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   .redirect-note{font-size:11px;color:var(--muted);}
+
+  /* ===== Checkout flow (demo) ===== */
+  .checkout-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:22px;box-shadow:var(--shadow-lg);max-width:760px;margin:0 auto;
+  }
+  .checkout-back{
+    display:inline-flex;align-items:center;gap:6px;color:var(--muted);
+    background:none;border:none;font-family:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;margin-bottom:16px;padding:0;
+  }
+  .checkout-back .icon{width:15px;height:15px;transform:scaleX(-1);}
+  [dir="ltr"] .checkout-back .icon,[lang="en"] .checkout-back .icon{transform:none;}
+  .checkout-back:hover{color:var(--primary);}
+
+  .checkout-stepper{display:flex;align-items:center;margin-bottom:22px;}
+  .checkout-step{display:flex;align-items:center;gap:8px;}
+  .checkout-step .step-num{
+    width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface-2);border:1.5px solid var(--border);
+    font-size:12.5px;font-weight:800;color:var(--muted);
+  }
+  .checkout-step .step-num .icon{width:14px;height:14px;}
+  .checkout-step.active .step-num{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .checkout-step.done .step-num{background:var(--success);border-color:var(--success);color:#fff;}
+  .checkout-step .step-label{font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap;}
+  .checkout-step.active .step-label{color:var(--text);}
+  .checkout-step-line{flex:1;height:2px;background:var(--border);margin:0 8px;min-width:16px;}
+
+  .checkout-summary{
+    background:var(--primary-tint);border-radius:var(--radius);padding:14px 16px;
+    margin-bottom:22px;font-size:13px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;
+  }
+  .checkout-summary b{color:var(--primary-dark);}
+  [data-theme="dark"] .checkout-summary b{color:var(--primary);}
+
+  .pax-card{border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+  .pax-card h4{margin:0 0 12px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px;}
+  .pax-card h4 .icon{width:16px;height:16px;color:var(--primary);}
+
+  .seat-map{display:flex;flex-direction:column;gap:6px;align-items:center;margin:16px 0;}
+  .seat-row{display:flex;gap:6px;align-items:center;}
+  .seat-row-num{width:20px;font-size:11px;color:var(--muted);text-align:center;}
+  .seat-aisle-gap{width:16px;}
+  .seat-btn{
+    width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);
+    background:var(--surface);font-family:inherit;font-weight:800;font-size:10.5px;
+    cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;
+    transition:all var(--dur) var(--ease);
+  }
+  .seat-btn:hover:not(.occupied){border-color:var(--primary);transform:scale(1.05);}
+  .seat-btn.selected{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .seat-btn.occupied{background:var(--surface-2);color:var(--border);cursor:not-allowed;border-style:dashed;}
+  .seat-btn.extra{border-color:var(--warning);}
+  .seat-legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--muted);margin-top:12px;}
+  .seat-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .seat-legend i{width:14px;height:14px;border-radius:4px;display:inline-block;border:1.5px solid var(--border);}
+  .seat-legend i.sel{background:var(--primary);border-color:var(--primary);}
+  .seat-legend i.occ{background:var(--surface-2);border-style:dashed;}
+  .seat-legend i.ext{border-color:var(--warning);}
+
+  .bag-option{
+    display:flex;align-items:center;gap:10px;padding:10px 4px;
+    border-bottom:1px solid var(--border);font-size:13.5px;
+  }
+  .bag-option:last-child{border-bottom:none;}
+  .bag-option input{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;min-height:auto;margin:0;}
+  .bag-option .bag-icon{color:var(--muted);display:flex;}
+  .bag-option .bag-icon .icon{width:18px;height:18px;}
+  .bag-option .bag-price{margin-inline-start:auto;font-weight:800;color:var(--primary-dark);}
+  [data-theme="dark"] .bag-option .bag-price{color:var(--primary);}
+
+  .payment-demo-banner{
+    display:flex;align-items:center;gap:8px;background:var(--surface-2);
+    border:1.5px dashed var(--warning);border-radius:var(--radius-sm);
+    padding:10px 14px;margin-bottom:18px;font-size:12.5px;color:var(--text);
+  }
+  .payment-demo-banner .icon{width:18px;height:18px;color:var(--warning);flex-shrink:0;}
+
+  .checkout-actions{display:flex;justify-content:space-between;gap:10px;margin-top:22px;}
+  .btn-secondary{
+    background:var(--surface-2);color:var(--text);border:1.5px solid var(--border);
+    min-height:46px;padding:12px 22px;border-radius:var(--radius-sm);font-weight:800;
+    font-family:inherit;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:7px;
+    transition:border-color var(--dur) var(--ease);
+  }
+  .btn-secondary:hover{border-color:var(--primary);}
+  .btn-secondary .icon{width:16px;height:16px;}
+
+  .success-screen{text-align:center;padding:36px 16px;}
+  .success-screen .icon{width:60px;height:60px;color:var(--success);margin-bottom:16px;}
+  .success-screen h3{font-size:19px;font-weight:900;margin:0 0 8px;}
+  .success-screen p{color:var(--muted);font-size:14px;margin:0 0 22px;}
   .confirm-btn{
     background:var(--primary);color:#fff;border:none;
     min-height:46px;padding:12px 26px;border-radius:var(--radius-sm);
@@ -674,6 +768,11 @@
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M4 4h4l2 5-2.5 2a11 11 0 0 0 5.5 5.5l2-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 13h20"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+  <symbol id="i-seat" viewBox="0 0 24 24"><path d="M6 4v9a2 2 0 0 0 2 2h8V4M6 13H4v6h2M18 13h2v6h-2M6 19h12"/></symbol>
 </svg>
 
 <header class="topnav">
@@ -719,6 +818,7 @@
 
 <div class="container">
 
+<div id="searchView">
   <div class="search-card">
     <div class="type-tabs" role="tablist">
       <button type="button" class="type-tab active" id="tabFlights" role="tab" aria-selected="true">
@@ -886,6 +986,9 @@
       <div class="promo-sub" data-i18n="promoNSub">قارن أسعار الرحلات إلى نيويورك الآن</div>
     </div>
   </button>
+</div>
+
+<div id="checkoutView" style="display:none"></div>
 
   <div class="site-footer">
     <div class="footer-cols">
@@ -1280,6 +1383,23 @@ const T = {
     depart:"مغادرة", arrive:"وصول", seatsLeft:"مقاعد فقط", seatsLeftPre:"باقي", available:"متوفر",
     perTraveler:"للمسافر", cheapest:"الأرخص", total:"الإجمالي:", continueBooking:"متابعة الحجز",
     redirectNote:"سيتم تحويلك لموقع خارجي لإكمال الحجز الفعلي",
+    stepPax:"بيانات المسافرين", stepSeatsBags:"المقاعد والأمتعة", stepRoomPrefs:"تفضيلات الغرفة", stepPayment:"الدفع",
+    backToResults:"رجوع للنتائج", passenger:"المسافر", fullName:"الاسم الكامل", fullNamePh:"مثل جواز السفر",
+    nationality:"الجنسية", nationalityPh:"مثال: سعودي", dob:"تاريخ الميلاد",
+    contactInfo:"بيانات التواصل", email:"البريد الإلكتروني", phone:"رقم الجوال",
+    next:"التالي", back:"السابق", chooseSeat:"اختر مقعدك", seatsChosen:"مقاعد مختارة",
+    extraLegroom:"مقعد بمساحة إضافية", regularSeat:"مقعد عادي", occupiedSeat:"محجوز",
+    seatAvailable:"متاح", seatSelected:"مختار", seatOccupied:"محجوز", seatExtra:"مساحة إضافية (+35 ر.س)",
+    baggageTitle:"الأمتعة الإضافية", extraBag:"حقيبة إضافية (23 كجم)",
+    roomPrefsTitle:"تفضيلات الغرفة", bedType:"نوع السرير", bedDouble:"سرير مزدوج", bedTwin:"سريرين منفصلين",
+    specialRequests:"طلبات خاصة", specialRequestsPh:"مثال: طابق مرتفع، غرفة هادئة...",
+    paymentTitle:"معلومات الدفع", paymentDemoWarning:"هذه صفحة تجريبية للعرض فقط — لا تُدخل بيانات بطاقة حقيقية، ولن تتم أي عملية دفع فعلية.",
+    cardName:"الاسم على البطاقة", cardNumber:"رقم البطاقة", cardExpiry:"تاريخ الانتهاء", cardCvv:"CVV",
+    payNow:"إتمام الحجز (تجريبي)", bookingConfirmed:"تم الحجز بنجاح! (تجريبي)",
+    bookingConfirmedNote:"هذا تأكيد تجريبي فقط ولم يتم أي دفع أو حجز فعلي. لإتمام حجز حقيقي استخدم زر التحويل لموقع خارجي.",
+    backToHome:"العودة للبحث", errPaxRequired:"الرجاء تعبئة اسم كل مسافر.", errContactRequired:"الرجاء إدخال البريد الإلكتروني ورقم الجوال.",
+    orCompleteReal:"تبي تحجز فعليًا؟ أكمل عبر موقع خارجي",
+    errSeatsRequired:"الرجاء اختيار مقعد لكل مسافر.", errCardRequired:"الرجاء تعبئة كل حقول الدفع.",
     savedPct:"وفّرت {pct}%", viewersFlight:"{n} يشوفون هذه الرحلة الآن", viewersHotel:"{n} يشاهدون هذا الفندق الآن",
     seatsAtPrice:"باقي {n} مقاعد بهذا السعر", roomsAtPrice:"باقي {n} غرف بهذا السعر", demoTag:"عرض تجريبي",
     airline:"شركة الطيران:", stopsLabel:"التوقفات:", directOnly:"مباشرة فقط",
@@ -1338,6 +1458,23 @@ const T = {
     depart:"Depart", arrive:"Arrive", seatsLeft:"seats left", seatsLeftPre:"Only", available:"Available",
     perTraveler:"per traveler", cheapest:"Cheapest", total:"Total:", continueBooking:"Continue booking",
     redirectNote:"You'll be redirected to an external site to complete the actual booking",
+    stepPax:"Passenger details", stepSeatsBags:"Seats & baggage", stepRoomPrefs:"Room preferences", stepPayment:"Payment",
+    backToResults:"Back to results", passenger:"Passenger", fullName:"Full name", fullNamePh:"As on passport",
+    nationality:"Nationality", nationalityPh:"e.g. Saudi", dob:"Date of birth",
+    contactInfo:"Contact details", email:"Email", phone:"Phone number",
+    next:"Next", back:"Back", chooseSeat:"Choose your seat", seatsChosen:"seats chosen",
+    extraLegroom:"Extra legroom seat", regularSeat:"Regular seat", occupiedSeat:"Occupied",
+    seatAvailable:"Available", seatSelected:"Selected", seatOccupied:"Occupied", seatExtra:"Extra legroom (+35 SAR)",
+    baggageTitle:"Extra baggage", extraBag:"Extra bag (23kg)",
+    roomPrefsTitle:"Room preferences", bedType:"Bed type", bedDouble:"Double bed", bedTwin:"Twin beds",
+    specialRequests:"Special requests", specialRequestsPh:"e.g. high floor, quiet room...",
+    paymentTitle:"Payment details", paymentDemoWarning:"This is a demo page for display only — do not enter real card details, no actual payment will be processed.",
+    cardName:"Name on card", cardNumber:"Card number", cardExpiry:"Expiry date", cardCvv:"CVV",
+    payNow:"Complete booking (demo)", bookingConfirmed:"Booking confirmed! (demo)",
+    bookingConfirmedNote:"This is a demo confirmation only — no payment or real booking was made. To complete a real booking, use the external redirect button.",
+    backToHome:"Back to search", errPaxRequired:"Please fill in every passenger's name.", errContactRequired:"Please enter an email and phone number.",
+    orCompleteReal:"Want to actually book? Complete it on an external site",
+    errSeatsRequired:"Please choose a seat for every passenger.", errCardRequired:"Please fill in all payment fields.",
     savedPct:"Save {pct}%", viewersFlight:"{n} people viewing this flight now", viewersHotel:"{n} people viewing this hotel now",
     seatsAtPrice:"Only {n} seats left at this price", roomsAtPrice:"Only {n} rooms left at this price", demoTag:"Demo offer",
     airline:"Airline:", stopsLabel:"Stops:", directOnly:"Direct only",
@@ -2034,7 +2171,7 @@ function renderResults(){
     <div class="summary-bar-inner"><button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button><span class="redirect-note">${t('redirectNote')}</span></div>
   `;
   summaryBar.querySelector('.confirm-btn').addEventListener('click', ()=>{
-    window.open(buildGoogleFlightsUrl(), '_blank', 'noopener');
+    startCheckout('flight');
   });
   main.appendChild(summaryBar);
 
@@ -2063,6 +2200,359 @@ function buildGoogleHotelsUrl(){
   const city = cityName(hotelState.city);
   const q = `Hotels in ${city} check in ${hotelState.checkIn} check out ${hotelState.checkOut}`;
   return 'https://www.google.com/travel/hotels?q=' + encodeURIComponent(q);
+}
+
+// ===== Checkout flow (demo) =====
+// A fully in-site multi-step booking flow (passenger details -> seats/baggage
+// or room preferences -> payment) so the product feels complete end-to-end.
+// The payment step is purely a visual mock: it never sends card data anywhere
+// and never charges anything. Real bookings still go through the external
+// redirect buttons (Google Flights/Hotels) built earlier.
+const searchViewEl = document.getElementById('searchView');
+const checkoutViewEl = document.getElementById('checkoutView');
+
+const SEAT_ROWS = 8;
+const SEAT_COLS = ['A','B','C','D'];
+const EXTRA_LEGROOM_ROWS = [1,2];
+
+const checkoutState = {
+  type:null, step:1, passengers:[], contactEmail:'', contactPhone:'',
+  selectedSeats:[], occupiedSeats:new Set(), extraBags:{},
+  roomBedType:'double', roomRequests:'', card:{name:'',number:'',expiry:'',cvv:''}
+};
+
+function seedOccupiedSeats(){
+  const seed = 'SEATS' + state.from + state.to + state.depart + (selectedOutbound ? selectedOutbound.depTime : '');
+  const rand = seededRandom(seed);
+  const total = SEAT_ROWS * SEAT_COLS.length;
+  const occ = new Set();
+  const occCount = Math.floor(total * 0.35);
+  let guard = 0;
+  while(occ.size < occCount && guard < 500){
+    guard++;
+    const r = 1 + Math.floor(rand() * SEAT_ROWS);
+    const c = SEAT_COLS[Math.floor(rand() * SEAT_COLS.length)];
+    occ.add(r + c);
+  }
+  return occ;
+}
+
+function startCheckout(type){
+  checkoutState.type = type;
+  checkoutState.step = 1;
+  const count = type === 'flight' ? Math.max(1, paxCount()) : Math.max(1, hotelState.guests);
+  checkoutState.passengers = Array.from({length: count}, () => ({ name:'', nationality:'', dob:'' }));
+  checkoutState.contactEmail = '';
+  checkoutState.contactPhone = '';
+  checkoutState.selectedSeats = [];
+  checkoutState.occupiedSeats = type === 'flight' ? seedOccupiedSeats() : new Set();
+  checkoutState.extraBags = {};
+  checkoutState.roomBedType = 'double';
+  checkoutState.roomRequests = '';
+  checkoutState.card = { name:'', number:'', expiry:'', cvv:'' };
+
+  searchViewEl.style.display = 'none';
+  checkoutViewEl.style.display = '';
+  renderCheckout();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function exitCheckout(){
+  checkoutViewEl.style.display = 'none';
+  searchViewEl.style.display = '';
+}
+
+function checkoutTripSummary(){
+  if(checkoutState.type === 'flight'){
+    let total = selectedOutbound ? fareTotal(selectedOutbound) : 0;
+    if(state.tripType === 'roundtrip' && selectedReturn) total += fareTotal(selectedReturn);
+    return `
+      <span>${icon('i-plane')} <b>${cityName(state.from)} ${icon('i-arrow')} ${cityName(state.to)}</b></span>
+      <span>${icon('i-users')} <b class="num">${paxCount()}</b> ${t('pax')}</span>
+      <span>${icon('i-tag')} <b>${moneyPlain(total)}</b></span>
+    `;
+  }
+  const nights = hotelState.nights;
+  const total = selectedHotel ? selectedHotel.pricePerNight * nights * hotelState.rooms : 0;
+  return `
+    <span>${icon('i-bed')} <b>${cityName(hotelState.city)}</b></span>
+    <span>${icon('i-users')} <b class="num">${hotelState.guests}</b> ${t('pax')}</span>
+    <span>${icon('i-tag')} <b>${moneyPlain(total)}</b></span>
+  `;
+}
+
+function renderCheckout(){
+  const steps = checkoutState.type === 'flight'
+    ? [t('stepPax'), t('stepSeatsBags'), t('stepPayment')]
+    : [t('stepPax'), t('stepRoomPrefs'), t('stepPayment')];
+
+  const stepperHtml = '<div class="checkout-stepper">' + steps.map((label,i)=>{
+    const n = i+1;
+    const cls = n < checkoutState.step ? 'done' : n === checkoutState.step ? 'active' : '';
+    const num = n < checkoutState.step ? icon('i-check') : n;
+    const line = i < steps.length-1 ? '<div class="checkout-step-line"></div>' : '';
+    return `<div class="checkout-step ${cls}"><span class="step-num">${num}</span><span class="step-label">${label}</span></div>${line}`;
+  }).join('') + '</div>';
+
+  let body;
+  if(checkoutState.step === 1) body = renderPaxStep();
+  else if(checkoutState.step === 2) body = checkoutState.type === 'flight' ? renderSeatsBagsStep() : renderRoomPrefsStep();
+  else if(checkoutState.step === 3) body = renderPaymentStep();
+  else body = renderSuccessStep();
+
+  checkoutViewEl.innerHTML = `
+    <div class="checkout-card">
+      <button type="button" class="checkout-back" id="checkoutBackBtn">${icon('i-arrow')} ${t('backToResults')}</button>
+      ${checkoutState.step <= 3 ? stepperHtml : ''}
+      ${checkoutState.step <= 3 ? `<div class="checkout-summary">${checkoutTripSummary()}</div>` : ''}
+      ${body}
+    </div>
+  `;
+  document.getElementById('checkoutBackBtn').addEventListener('click', exitCheckout);
+  wireCheckoutStepEvents();
+}
+
+function renderPaxStep(){
+  const cards = checkoutState.passengers.map((p,i)=>`
+    <div class="pax-card">
+      <h4>${icon('i-users')} ${t('passenger')} ${i+1}</h4>
+      <div class="row">
+        <div class="field">
+          <label>${t('fullName')}</label>
+          <input type="text" class="pax-name" data-i="${i}" value="${p.name}" placeholder="${t('fullNamePh')}">
+        </div>
+        <div class="field">
+          <label>${t('nationality')}</label>
+          <input type="text" class="pax-nat" data-i="${i}" value="${p.nationality}" placeholder="${t('nationalityPh')}">
+        </div>
+        <div class="field">
+          <label>${t('dob')}</label>
+          <input type="date" class="pax-dob" data-i="${i}" value="${p.dob}">
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    ${cards}
+    <div class="pax-card">
+      <h4>${icon('i-mail')} ${t('contactInfo')}</h4>
+      <div class="row">
+        <div class="field">
+          <label>${t('email')}</label>
+          <input type="email" id="contactEmailInput" value="${checkoutState.contactEmail}" placeholder="name@example.com">
+        </div>
+        <div class="field">
+          <label>${t('phone')}</label>
+          <input type="tel" id="contactPhoneInput" value="${checkoutState.contactPhone}" placeholder="+966 5xxxxxxxx">
+        </div>
+      </div>
+    </div>
+    <div class="checkout-actions">
+      <span></span>
+      <button type="button" class="search-btn" id="checkoutNextBtn" style="width:auto;padding:12px 28px">${t('next')} ${icon('i-arrow')}</button>
+    </div>
+  `;
+}
+
+function renderSeatsBagsStep(){
+  let rowsHtml = '';
+  for(let r=1; r<=SEAT_ROWS; r++){
+    let seatsHtml = '';
+    SEAT_COLS.forEach((col,ci)=>{
+      const code = r + col;
+      const occupied = checkoutState.occupiedSeats.has(code);
+      const selected = checkoutState.selectedSeats.includes(code);
+      const extra = EXTRA_LEGROOM_ROWS.includes(r);
+      const cls = ['seat-btn', occupied?'occupied':'', selected?'selected':'', extra?'extra':''].filter(Boolean).join(' ');
+      seatsHtml += `<button type="button" class="${cls}" data-seat="${code}" ${occupied?'disabled':''}>${code}</button>`;
+      if(ci === 1) seatsHtml += '<span class="seat-aisle-gap"></span>';
+    });
+    rowsHtml += `<div class="seat-row"><span class="seat-row-num">${r}</span>${seatsHtml}</div>`;
+  }
+
+  const bagsHtml = checkoutState.passengers.map((p,i)=>`
+    <label class="bag-option">
+      <input type="checkbox" class="bag-check" data-i="${i}" ${checkoutState.extraBags[i]?'checked':''}>
+      <span class="bag-icon">${icon('i-briefcase')}</span>
+      ${t('passenger')} ${i+1} — ${t('extraBag')}
+      <span class="bag-price">${moneyPlain(60)}</span>
+    </label>
+  `).join('');
+
+  return `
+    <div class="pax-card">
+      <h4>${icon('i-seat')} ${t('chooseSeat')} <span style="margin-inline-start:auto;font-weight:700;font-size:12.5px;color:var(--muted)">${checkoutState.selectedSeats.length}/${checkoutState.passengers.length} ${t('seatsChosen')}</span></h4>
+      <div class="seat-map">${rowsHtml}</div>
+      <div class="seat-legend">
+        <span><i></i>${t('seatAvailable')}</span>
+        <span><i class="sel"></i>${t('seatSelected')}</span>
+        <span><i class="occ"></i>${t('seatOccupied')}</span>
+        <span><i class="ext"></i>${t('seatExtra')}</span>
+      </div>
+    </div>
+    <div class="pax-card">
+      <h4>${icon('i-briefcase')} ${t('baggageTitle')}</h4>
+      ${bagsHtml}
+    </div>
+    <div class="checkout-actions">
+      <button type="button" class="btn-secondary" id="checkoutBackStepBtn">${icon('i-arrow')} ${t('back')}</button>
+      <button type="button" class="search-btn" id="checkoutNextBtn" style="width:auto;padding:12px 28px">${t('next')} ${icon('i-arrow')}</button>
+    </div>
+  `;
+}
+
+function renderRoomPrefsStep(){
+  return `
+    <div class="pax-card">
+      <h4>${icon('i-bed')} ${t('roomPrefsTitle')}</h4>
+      <div class="row">
+        <div class="field">
+          <label>${t('bedType')}</label>
+          <select id="bedTypeSelect">
+            <option value="double" ${checkoutState.roomBedType==='double'?'selected':''}>${t('bedDouble')}</option>
+            <option value="twin" ${checkoutState.roomBedType==='twin'?'selected':''}>${t('bedTwin')}</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:6px">
+        <label>${t('specialRequests')}</label>
+        <textarea id="roomRequestsInput" rows="3" placeholder="${t('specialRequestsPh')}" style="border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-family:inherit;font-size:14px;background:var(--surface);color:var(--text);resize:vertical">${checkoutState.roomRequests}</textarea>
+      </div>
+    </div>
+    <div class="checkout-actions">
+      <button type="button" class="btn-secondary" id="checkoutBackStepBtn">${icon('i-arrow')} ${t('back')}</button>
+      <button type="button" class="search-btn" id="checkoutNextBtn" style="width:auto;padding:12px 28px">${t('next')} ${icon('i-arrow')}</button>
+    </div>
+  `;
+}
+
+function renderPaymentStep(){
+  return `
+    <div class="payment-demo-banner">${icon('i-alert')} ${t('paymentDemoWarning')}</div>
+    <div class="pax-card">
+      <h4>${icon('i-card')} ${t('paymentTitle')}</h4>
+      <div class="row">
+        <div class="field">
+          <label>${t('cardName')}</label>
+          <input type="text" id="cardNameInput" value="${checkoutState.card.name}" placeholder="FIRST LAST" autocomplete="off">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>${t('cardNumber')}</label>
+          <input type="text" id="cardNumberInput" value="${checkoutState.card.number}" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>${t('cardExpiry')}</label>
+          <input type="text" id="cardExpiryInput" value="${checkoutState.card.expiry}" placeholder="MM/YY" maxlength="5" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>${t('cardCvv')}</label>
+          <input type="text" id="cardCvvInput" value="${checkoutState.card.cvv}" placeholder="123" maxlength="4" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="checkout-actions">
+      <button type="button" class="btn-secondary" id="checkoutBackStepBtn">${icon('i-arrow')} ${t('back')}</button>
+      <button type="button" class="search-btn" id="checkoutPayBtn" style="width:auto;padding:12px 28px">${icon('i-check')} ${t('payNow')}</button>
+    </div>
+  `;
+}
+
+function renderSuccessStep(){
+  return `
+    <div class="success-screen">
+      ${icon('i-check')}
+      <h3>${t('bookingConfirmed')}</h3>
+      <p>${t('bookingConfirmedNote')}</p>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        <button type="button" class="search-btn" id="checkoutHomeBtn" style="width:auto;padding:12px 28px">${t('backToHome')}</button>
+        <button type="button" class="btn-secondary" id="checkoutRealBookBtn">${icon('i-globe')} ${t('orCompleteReal')}</button>
+      </div>
+    </div>
+  `;
+}
+
+function wireCheckoutStepEvents(){
+  const backStepBtn = document.getElementById('checkoutBackStepBtn');
+  if(backStepBtn) backStepBtn.addEventListener('click', ()=>{ checkoutState.step--; renderCheckout(); });
+
+  const homeBtn = document.getElementById('checkoutHomeBtn');
+  if(homeBtn) homeBtn.addEventListener('click', exitCheckout);
+
+  const realBookBtn = document.getElementById('checkoutRealBookBtn');
+  if(realBookBtn) realBookBtn.addEventListener('click', ()=>{
+    const url = checkoutState.type === 'flight' ? buildGoogleFlightsUrl() : buildGoogleHotelsUrl();
+    window.open(url, '_blank', 'noopener');
+  });
+
+  if(checkoutState.step === 1){
+    checkoutViewEl.querySelectorAll('.pax-name').forEach(el=>{
+      el.addEventListener('input', ()=>{ checkoutState.passengers[Number(el.dataset.i)].name = el.value; });
+    });
+    checkoutViewEl.querySelectorAll('.pax-nat').forEach(el=>{
+      el.addEventListener('input', ()=>{ checkoutState.passengers[Number(el.dataset.i)].nationality = el.value; });
+    });
+    checkoutViewEl.querySelectorAll('.pax-dob').forEach(el=>{
+      el.addEventListener('input', ()=>{ checkoutState.passengers[Number(el.dataset.i)].dob = el.value; });
+    });
+    document.getElementById('contactEmailInput').addEventListener('input', e=>{ checkoutState.contactEmail = e.target.value; });
+    document.getElementById('contactPhoneInput').addEventListener('input', e=>{ checkoutState.contactPhone = e.target.value; });
+    document.getElementById('checkoutNextBtn').addEventListener('click', ()=>{
+      const namesOk = checkoutState.passengers.every(p=>p.name.trim().length > 0);
+      if(!namesOk){ alert(t('errPaxRequired')); return; }
+      if(!checkoutState.contactEmail.trim() || !checkoutState.contactPhone.trim()){ alert(t('errContactRequired')); return; }
+      checkoutState.step = 2;
+      renderCheckout();
+    });
+  } else if(checkoutState.step === 2 && checkoutState.type === 'flight'){
+    checkoutViewEl.querySelectorAll('.seat-btn:not(.occupied)').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const code = btn.dataset.seat;
+        const idx = checkoutState.selectedSeats.indexOf(code);
+        if(idx > -1){
+          checkoutState.selectedSeats.splice(idx,1);
+        } else if(checkoutState.selectedSeats.length < checkoutState.passengers.length){
+          checkoutState.selectedSeats.push(code);
+        }
+        renderCheckout();
+      });
+    });
+    checkoutViewEl.querySelectorAll('.bag-check').forEach(el=>{
+      el.addEventListener('change', ()=>{ checkoutState.extraBags[Number(el.dataset.i)] = el.checked; });
+    });
+    document.getElementById('checkoutNextBtn').addEventListener('click', ()=>{
+      if(checkoutState.selectedSeats.length < checkoutState.passengers.length){ alert(t('errSeatsRequired')); return; }
+      checkoutState.step = 3;
+      renderCheckout();
+    });
+  } else if(checkoutState.step === 2 && checkoutState.type === 'hotel'){
+    document.getElementById('bedTypeSelect').addEventListener('change', e=>{ checkoutState.roomBedType = e.target.value; });
+    document.getElementById('roomRequestsInput').addEventListener('input', e=>{ checkoutState.roomRequests = e.target.value; });
+    document.getElementById('checkoutNextBtn').addEventListener('click', ()=>{
+      checkoutState.step = 3;
+      renderCheckout();
+    });
+  } else if(checkoutState.step === 3){
+    const nameEl = document.getElementById('cardNameInput');
+    const numEl = document.getElementById('cardNumberInput');
+    const expEl = document.getElementById('cardExpiryInput');
+    const cvvEl = document.getElementById('cardCvvInput');
+    nameEl.addEventListener('input', e=>{ checkoutState.card.name = e.target.value; });
+    numEl.addEventListener('input', e=>{ checkoutState.card.number = e.target.value; });
+    expEl.addEventListener('input', e=>{ checkoutState.card.expiry = e.target.value; });
+    cvvEl.addEventListener('input', e=>{ checkoutState.card.cvv = e.target.value; });
+    document.getElementById('checkoutPayBtn').addEventListener('click', ()=>{
+      if(!nameEl.value.trim() || !numEl.value.trim() || !expEl.value.trim() || !cvvEl.value.trim()){
+        alert(t('errCardRequired'));
+        return;
+      }
+      // Demo only: nothing is sent anywhere, no real payment is processed.
+      checkoutState.step = 4;
+      renderCheckout();
+    });
+  }
 }
 
 const HOTEL_IMAGES = [
@@ -2329,7 +2819,7 @@ function renderHotelResults(){
     <div class="summary-bar-inner"><button class="confirm-btn" disabled>${icon('i-arrow')} ${t('continueBooking')}</button><span class="redirect-note">${t('redirectNote')}</span></div>
   `;
   summaryBar.querySelector('.confirm-btn').addEventListener('click', ()=>{
-    window.open(buildGoogleHotelsUrl(), '_blank', 'noopener');
+    startCheckout('hotel');
   });
   main.appendChild(summaryBar);
 
