@@ -2065,31 +2065,28 @@ function formatArabicDate(dateStr){
 // the actual booking there. FlyB is comparison-only — no in-site checkout,
 // no payment data collected, no direct airline/hotel integration needed.
 //
-// TRAVELPAYOUTS_MARKER: your partner/marker ID from travelpayouts.com
-// (Affiliate area -> Tools -> Deep Links). Until it's set, links fall back
-// to a plain Google Flights/Hotels search so the site keeps working.
+// These link to real Travelpayouts partner domains (Aviasales/Hotellook) so
+// the Drive script installed in <head> can auto-monetize the click. Optional
+// TRAVELPAYOUTS_MARKER (Affiliate area -> Tools -> Deep Links) appends your
+// marker id directly, but Drive works even while this stays empty.
 const TRAVELPAYOUTS_MARKER = '';
 
 function buildFlightBookingUrl(){
   const from = state.from, to = state.to;
   const dep = state.depart, ret = (state.tripType === 'roundtrip') ? state.ret : null;
-  if(TRAVELPAYOUTS_MARKER){
-    const ddmm = d => d ? `${d.slice(8,10)}${d.slice(5,7)}` : '';
-    const seg = ret ? `${from}${ddmm(dep)}${to}${ddmm(ret)}1` : `${from}${ddmm(dep)}${to}1`;
-    return `https://www.aviasales.com/search/${seg}?marker=${TRAVELPAYOUTS_MARKER}`;
-  }
-  const q = `Flights from ${cityName(from)} to ${cityName(to)} on ${dep}` + (ret ? ` returning ${ret}` : '');
-  return 'https://www.google.com/travel/flights?q=' + encodeURIComponent(q);
+  const ddmm = d => d ? `${d.slice(8,10)}${d.slice(5,7)}` : '';
+  const seg = ret ? `${from}${ddmm(dep)}${to}${ddmm(ret)}1` : `${from}${ddmm(dep)}${to}1`;
+  let url = `https://www.aviasales.com/search/${seg}`;
+  if(TRAVELPAYOUTS_MARKER) url += `?marker=${TRAVELPAYOUTS_MARKER}`;
+  return url;
 }
 
 function buildHotelBookingUrl(){
   const city = hotelState.city, checkIn = hotelState.checkIn, checkOut = hotelState.checkOut;
-  if(TRAVELPAYOUTS_MARKER){
-    return `https://search.hotellook.com/hotels?destination=${encodeURIComponent(cityName(city))}`
-      + `&checkIn=${checkIn}&checkOut=${checkOut}&marker=${TRAVELPAYOUTS_MARKER}`;
-  }
-  const q = `Hotels in ${cityName(city)} check in ${checkIn} check out ${checkOut}`;
-  return 'https://www.google.com/travel/hotels?q=' + encodeURIComponent(q);
+  let url = `https://search.hotellook.com/hotels?destination=${encodeURIComponent(cityName(city))}`
+    + `&checkIn=${checkIn}&checkOut=${checkOut}`;
+  if(TRAVELPAYOUTS_MARKER) url += `&marker=${TRAVELPAYOUTS_MARKER}`;
+  return url;
 }
 
 const HOTEL_IMAGES = [
