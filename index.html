@@ -1079,10 +1079,8 @@ const CABIN_LABEL = { economy:{ar:'الاقتصادية', en:'Economy'}, busines
 // isn't configured with an API token yet, or the request errors/times out,
 // every function here resolves to null and the caller falls back to the
 // built-in demo generator — the site keeps working either way.
-// Points at the local backend by default. After deploying server/ to Railway
-// (or any host), replace this with the deployed URL (e.g. 'https://flyb-production.up.railway.app')
-// so real visitors — not just your own machine — get live-anchored prices.
-const API_BASE = 'http://localhost:8787';
+// Backend deployed on Railway -- see server/index.js.
+const API_BASE = 'https://flyb-production-e253.up.railway.app';
 const LIVE_FETCH_TIMEOUT_MS = 8000;
 
 async function fetchJsonWithTimeout(url, ms){
