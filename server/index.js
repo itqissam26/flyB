@@ -29,8 +29,10 @@ app.get('/api/prices/flights', async (req, res) => {
     return res.status(400).json({ error: 'origin, destination and date are required' });
   }
 
-  const params = new URLSearchParams({ origin, destination, depart_date: date, currency: 'usd' });
-  if (returnDate) params.set('return_date', returnDate);
+  // The v1/prices/cheap endpoint only recognizes month-level dates (YYYY-MM);
+  // a full YYYY-MM-DD silently returns no data.
+  const params = new URLSearchParams({ origin, destination, depart_date: date.slice(0, 7), currency: 'usd' });
+  if (returnDate) params.set('return_date', returnDate.slice(0, 7));
 
   try {
     const r = await fetch(`https://api.travelpayouts.com/v1/prices/cheap?${params}`, {
@@ -47,32 +49,12 @@ app.get('/api/prices/flights', async (req, res) => {
 });
 
 // GET /api/prices/hotels?location=RUH&checkIn=2026-08-01&checkOut=2026-08-05
-// Proxies the Hotellook cache API (also part of Travelpayouts) for a cheapest
-// per-night price estimate.
+// The old Hotellook cache API (engine.hotellook.com) this used to proxy has
+// been decommissioned (every path on that host now 404s, confirmed manually).
+// Left as a stub returning 404 so the frontend's existing fallback-to-demo
+// logic kicks in cleanly -- revisit if Travelpayouts ships a replacement.
 app.get('/api/prices/hotels', async (req, res) => {
-  if (!isConfigured()) {
-    return res.status(503).json({ error: 'server_not_configured', message: 'Add TRAVELPAYOUTS_API_TOKEN to server/.env' });
-  }
-  const { location, checkIn, checkOut } = req.query;
-  if (!location || !checkIn || !checkOut) {
-    return res.status(400).json({ error: 'location, checkIn and checkOut are required' });
-  }
-
-  const params = new URLSearchParams({
-    location, checkIn, checkOut, currency: 'usd', limit: '5', token: TP_TOKEN,
-  });
-
-  try {
-    const r = await fetch(`https://engine.hotellook.com/api/v2/cache.json?${params}`);
-    const json = await r.json();
-    const prices = Array.isArray(json)
-      ? json.map(h => h.priceFrom).filter(p => typeof p === 'number')
-      : [];
-    if (!prices.length) return res.status(404).json({ error: 'no_price_data' });
-    res.json({ pricePerNight: Math.min(...prices), currency: 'usd' });
-  } catch (err) {
-    res.status(500).json({ error: 'travelpayouts_request_failed', details: String(err.message) });
-  }
+  res.status(404).json({ error: 'hotel_price_api_unavailable' });
 });
 
 app.listen(PORT, () => {
