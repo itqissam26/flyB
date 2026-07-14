@@ -1,7 +1,7 @@
 {
   "name": "flyb-server",
   "version": "1.0.0",
-  "description": "Backend proxy for FlyB - keeps the Amadeus API key secret and forwards search requests.",
+  "description": "Backend proxy for FlyB - keeps the Travelpayouts API token secret and forwards price requests.",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {

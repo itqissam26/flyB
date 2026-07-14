@@ -1096,19 +1096,6 @@ async function fetchJsonWithTimeout(url, ms){
   }
 }
 
-function airlineByCode(code){
-  return airlines.find(a=>a.code===code) || {
-    code, name: code || '—', color:'#6b7280', mult:1, hauls:['short','medium','long'], logo:''
-  };
-}
-
-function parseIsoDurationToMin(iso){
-  const m = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(iso || '');
-  const h = m && m[1] ? parseInt(m[1],10) : 0;
-  const mnt = m && m[2] ? parseInt(m[2],10) : 0;
-  return h*60 + mnt;
-}
-
 // Best-effort conversion of a foreign-currency amount into our SAR baseline,
 // using the same static rates as the currency switcher. Unknown currencies
 // are passed through as-is rather than crashing.
@@ -1117,92 +1104,37 @@ function toSarApprox(amount, currency){
   return c ? amount / c.rate : amount;
 }
 
-// A Duffel flight "offer" has slices[0]=outbound, slices[1]=return (round trip).
-// We split it into our separate outbound/return shape; the full price is kept
-// on the outbound leg so totals aren't double-counted when both are selected.
-function duffelSliceToFlight(slice, priceForThisLegSar){
-  try {
-    const segs = slice.segments;
-    const first = segs[0];
-    const last = segs[segs.length-1];
-    const depDate = new Date(first.departing_at);
-    const arrDate = new Date(last.arriving_at);
-    const stops = segs.length - 1;
-    const pad = n => String(n).padStart(2,'0');
-    const carrier = first.marketing_carrier || first.operating_carrier || {};
-    const durationMin = parseIsoDurationToMin(slice.duration || first.duration);
-    return {
-      airline: airlineByCode(carrier.iata_code),
-      depTime: `${pad(depDate.getHours())}:${pad(depDate.getMinutes())}`,
-      arrTime: `${pad(arrDate.getHours())}:${pad(arrDate.getMinutes())}`,
-      durationMin,
-      price: priceForThisLegSar,
-      originalPrice: priceForThisLegSar, discountPercent: 0,
-      seatsLeft: 9, viewers: 5 + Math.floor(Math.random()*30),
-      stops,
-      stopCity: stops > 0 ? (first.destination && first.destination.iata_code) : null,
-      layoverMin: stops > 0 ? Math.max(0, durationMin - 120) : 0,
-      timeOfDay: timeOfDayOf(depDate.getHours())
-    };
-  } catch(e){ return null; }
-}
-
-// Returns {outbound:[...], return:[...]} or null (meaning: use demo data instead).
-async function fetchLiveFlights(from, to, date, ret, adults){
-  const url = `${API_BASE}/api/flights/search?origin=${from}&destination=${to}&date=${date}`
-    + (ret ? `&returnDate=${ret}` : '') + `&adults=${adults || 1}`;
-  const data = await fetchJsonWithTimeout(url, LIVE_FETCH_TIMEOUT_MS);
-  const offers = data && data.data && Array.isArray(data.data.offers) ? data.data.offers : null;
-  if(!offers || !offers.length) return null;
-
-  const outbound = [];
-  const back = [];
-  offers.forEach(offer=>{
-    const total = Math.round(toSarApprox(parseFloat(offer.total_amount), offer.total_currency));
-    if(!offer.slices || !offer.slices.length || isNaN(total)) return;
-    const out = duffelSliceToFlight(offer.slices[0], total);
-    if(out) outbound.push(out);
-    if(ret && offer.slices[1]){
-      const back1 = duffelSliceToFlight(offer.slices[1], 0);
-      if(back1) back.push(back1);
-    }
+// Rescales a list of demo price/originalPrice fields so their minimum lines up
+// with a real price fetched from the Travelpayouts Data API, keeping the demo
+// data's relative spread (stops, times, airlines) while anchoring it to reality.
+function rescalePrices(items, realPrice, priceKey, origKey){
+  if(!items || !items.length || !(realPrice > 0)) return;
+  const currentMin = Math.min(...items.map(x=>x[priceKey]));
+  if(!(currentMin > 0)) return;
+  const factor = realPrice / currentMin;
+  items.forEach(x=>{
+    x[priceKey] = Math.round(x[priceKey] * factor);
+    x[origKey] = Math.round(x[origKey] * factor);
   });
-  if(!outbound.length) return null;
-  return { outbound, return: back };
 }
 
-// Returns an array of hotel objects (our shape) or null.
-async function fetchLiveHotels(cityCode, checkIn, checkOut, adults){
-  const url = `${API_BASE}/api/hotels/search?cityCode=${cityCode}&checkIn=${checkIn}&checkOut=${checkOut}&adults=${adults || 1}`;
+// Returns {price:number} in SAR (the real cheapest price for the route) or
+// null (meaning: no real price found, keep the demo-generated prices as-is).
+async function fetchLiveFlights(from, to, date, ret, adults){
+  const url = `${API_BASE}/api/prices/flights?origin=${from}&destination=${to}&date=${date}`
+    + (ret ? `&returnDate=${ret}` : '');
   const data = await fetchJsonWithTimeout(url, LIVE_FETCH_TIMEOUT_MS);
-  const results = data && data.data && Array.isArray(data.data.results) ? data.data.results : null;
-  if(!results || !results.length) return null;
-
-  const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
-  const hotels = results.map(r=>{
-    try {
-      const acc = r.accommodation;
-      const totalSar = toSarApprox(parseFloat(r.cheapest_rate_total_amount), r.cheapest_rate_currency);
-      if(!acc || isNaN(totalSar)) return null;
-      const cityName = acc.location && acc.location.address && acc.location.address.city_name;
-      return {
-        nameKey: null, liveName: acc.name, cityCode,
-        stars: acc.rating || 4,
-        pricePerNight: Math.round(totalSar / nights),
-        originalPricePerNight: Math.round(totalSar / nights), discountPercent: 0,
-        roomsLeft: 9, viewers: 4 + Math.floor(Math.random()*40),
-        image: (acc.photos && acc.photos[0] && acc.photos[0].url) || HOTEL_IMAGES[Math.floor(Math.random()*HOTEL_IMAGES.length)],
-        locKey: cityName ? null : 'locDowntown',
-        neighborhood: cityName ? { ar: cityName, en: cityName } : null,
-        amenityKeys: AMENITY_KEYS.slice(0,3),
-        rating: acc.review_score || 7.5,
-        reviews: acc.review_count || 0
-      };
-    } catch(e){ return null; }
-  }).filter(Boolean);
-  return hotels.length ? hotels : null;
+  if(!data || typeof data.price !== 'number') return null;
+  return { price: toSarApprox(data.price, data.currency) };
 }
 
+// Returns {pricePerNight:number} in SAR or null (use demo prices as-is).
+async function fetchLiveHotels(cityCode, checkIn, checkOut, adults){
+  const url = `${API_BASE}/api/prices/hotels?location=${cityCode}&checkIn=${checkIn}&checkOut=${checkOut}`;
+  const data = await fetchJsonWithTimeout(url, LIVE_FETCH_TIMEOUT_MS);
+  if(!data || typeof data.pricePerNight !== 'number') return null;
+  return { pricePerNight: toSarApprox(data.pricePerNight, data.currency) };
+}
 // ----- Currency (all base prices are in SAR) -----
 const CURRENCIES = {
   SAR:{rate:1,     symbol:'ر.س'},
@@ -1828,16 +1760,17 @@ async function runSearch(){
   renderSkeleton(type === 'roundtrip' ? 5 : 3);
   resultsArea.scrollIntoView({behavior:'smooth', block:'start'});
 
-  // try the live backend first (Duffel proxy); fall back to demo data
+  state.outboundFlights = generateFlights(from, to, depart);
+  state.returnFlights = type === 'roundtrip' ? generateFlights(to, from, ret) : [];
+
+  // anchor the demo-generated prices to a real cheapest price (Travelpayouts
+  // Data API proxy); fall back to unmodified demo pricing if unavailable
   const live = await fetchLiveFlights(from, to, depart, type === 'roundtrip' ? ret : null, state.adults);
   if(live){
     state.dataSource = 'live';
-    state.outboundFlights = live.outbound;
-    state.returnFlights = type === 'roundtrip' ? live.return : [];
+    rescalePrices(state.outboundFlights, live.price, 'price', 'originalPrice');
   } else {
     state.dataSource = 'demo';
-    state.outboundFlights = generateFlights(from, to, depart);
-    state.returnFlights = type === 'roundtrip' ? generateFlights(to, from, ret) : [];
   }
   state.airlineFilter = new Set(state.outboundFlights.concat(state.returnFlights).map(f=>f.airline.code));
 
@@ -2388,13 +2321,14 @@ async function runHotelSearch(){
   renderSkeleton(4);
   resultsArea.scrollIntoView({behavior:'smooth', block:'start'});
 
+  hotelState.hotels = generateHotels(city, checkIn, checkOut);
+
   const live = await fetchLiveHotels(city, checkIn, checkOut, hotelState.guests);
   if(live){
     hotelState.dataSource = 'live';
-    hotelState.hotels = live;
+    rescalePrices(hotelState.hotels, live.pricePerNight, 'pricePerNight', 'originalPricePerNight');
   } else {
     hotelState.dataSource = 'demo';
-    hotelState.hotels = generateHotels(city, checkIn, checkOut);
   }
 
   renderHotelResults();
